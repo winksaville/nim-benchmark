@@ -1,0 +1,9 @@
+# Global patterns
+*.swp
+.DS_STORE
+nimcache/
+
+# Full paths
+/nakefile
+/tests/test
+/src/cmdargsopt
