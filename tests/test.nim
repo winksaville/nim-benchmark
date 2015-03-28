@@ -87,14 +87,15 @@ suite "bmTests":
     check(duration * 1.20 >= runTime)
     when DBG: fail()
 
-bmSuite "suite1":
-  const DBG = false
-  var result: RunningStat
+bmSuite "testing echo":
+  var rs: RunningStat
+  var loops = 0
 
-  bmRun "bmRun for 0.0001 seconds", 0.0001, result:
-    when DBG: echo "ok"
-    work()
-  echo "min=", result.min
+  bmLoops "loop 10 times", 10, rs:
+    loops += 1
+    echo "loop ", loops
+  echo "rs=", rs
+
 
 bmSuite "suite2":
   const
@@ -118,6 +119,13 @@ bmSuite "suite2":
 
   bmRun "bmRun for 1_000_000 cycles", 1_000_000, result:
     when DBG: echo "hi"
+    work()
+  echo "min=", result.min
+
+  var loops = 0
+  bmLoops "bmLoops for 2 loops", 2, result:
+    loops += 1
+    when DBG: echo "loop ", loops
     work()
 
   echo "min=", result.min

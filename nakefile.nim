@@ -1,7 +1,7 @@
 import nake
 
 const
-  buildArtifacts = @["src/benchmark", "src/nimcache", "tests/test", "tests/nimcache", "nimcache"]
+  buildArtifacts = @["t", "test", "tests/test", "tests/nimcache", "nimcache"]
   buildFlags = "-d:release --verbosity:2 --listcmd --hints:off --warnings:on --threads:on"
   #buildFlags = "--verbosity:9 --listCmd --hints:off --warnings:on --threads:on --parallelBuild:1"
 
