@@ -1,7 +1,7 @@
 import nake
 
 const
-  buildArtifacts = @["benchmark.html", "nimcache", "t", "tests/test", "tests/test.html", "tests/nimcache"]
+  buildArtifacts = @["benchmark", "benchmark.html", "nimcache", "t", "tests/test", "tests/test.html", "tests/nimcache"]
   buildFlags = "-d:release --verbosity:0 --hints:off --warnings:off --threads:on"
   #buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --parallelBuild:1"
 
@@ -13,7 +13,14 @@ task defaultTask, "Clean, Compile and run the tests":
   runTask "build-tests"
   runTask "run-tests"
 
-task "build-docs", "Buiild the documents":
+task "bm", "Build and run benchmark for its tests":
+  if shell(nimExe, "c -r",  buildFlags, "benchmark.nim"):
+    echo "success"
+  else:
+    echo "error compiling"
+    quit 1
+
+task "docs", "Buiild the documents":
   for file in docFiles:
     if shell(nimExe, "doc", docFlags, file):
       echo "success"

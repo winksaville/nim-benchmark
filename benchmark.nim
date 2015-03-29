@@ -67,11 +67,11 @@ proc `$`*(r: RunningStat): string =
   ## Print the RunningStat.
   "{n=" & $r.n & " sum=" & $r.sum & " min=" & $r.min & " max=" & $r.max & " mean=" & $r.mean & "}"
 
-proc `$`*(cpuid: CpuId): string =
+proc `$`(cpuid: CpuId): string =
   ## Print the CpuId.
   "{ eax=0x" & cpuid.eax.toHex(8) & " ebx=0x" & cpuid.ebx.toHex(8) & " ecx=0x" & cpuid.ecx.toHex(8) & " edx=0x" & cpuid.edx.toHex(8) & "}"
 
-proc cpuid*(eax_param: int, ecx_param: int): CpuId =
+proc cpuid(eax_param: int, ecx_param: int): CpuId =
   ## Execute cpuid instruction wih EAX = eax_param and ECX = ecx_param.
   {.emit: """
     asm volatile (
@@ -82,7 +82,7 @@ proc cpuid*(eax_param: int, ecx_param: int): CpuId =
       : "r"(`eax_param`), "r"(`ecx_param`));
   """.}
 
-proc cpuid*(ax_param: int): CpuId =
+proc cpuid(ax_param: int): CpuId =
   ## Execute cpuid instruction wih EAX = eax_param.
   {.emit: """
     asm volatile (
@@ -92,7 +92,7 @@ proc cpuid*(ax_param: int): CpuId =
       : "r"(`ax_param`));
   """.}
 
-proc cpuid*() {.inline.} =
+proc cpuid() {.inline.} =
   ## Execute cpuid instruction wih no parameters. This will
   ## return arbitrary data and is used a memory barrier instruction.
   {.emit: """
@@ -103,7 +103,7 @@ proc cpuid*() {.inline.} =
       : "%eax", "%ebx", "%ecx", "%edx");
   """.}
 
-proc rdtsc*(): int64 {.inline.} =
+proc rdtsc(): int64 {.inline.} =
   ## Execute the rdtsc, read Time Stamp Counter, instruction
   ## returns the 64 bit TSC value.
   var lo, hi: uint32
@@ -114,7 +114,7 @@ proc rdtsc*(): int64 {.inline.} =
   """.}
   result = int64(lo) or (int64(hi) shl 32)
 
-proc rdtscp*(): int64 {.inline.} =
+proc rdtscp(): int64 {.inline.} =
   ## Execute the rdtscp, read Time Stamp Counter, instruction
   ## returns the 64 bit TSC value but ignore the tscAux value.
   var lo, hi: uint32
@@ -125,7 +125,7 @@ proc rdtscp*(): int64 {.inline.} =
   """.}
   result = int64(lo) or (int64(hi) shl 32)
 
-proc rdtscp*(tscAux: var int): int64 {.inline.} =
+proc rdtscp(tscAux: var int): int64 {.inline.} =
   ## Execute the rdtscp, read Time Stamp Counter, instruction
   ## returns the 64 bit TSC value and writes to ecx to tscAux value.
   ## The tscAux value is the logical cpu number and can be used
@@ -145,7 +145,7 @@ proc getBegCycles(): int64 {.inline.} =
   cpuid()
   result = rdtsc()
 
-proc getEndCycles*(): int64 {.inline.} =
+proc getEndCycles(): int64 {.inline.} =
   ## Return TSC to be used at the end of the measurement.
   result = rdtscp()
   cpuid()
@@ -360,16 +360,16 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
     template bmSetupImpl*: stmt = discard
     template bmTeardownImpl*: stmt = discard
 
-    template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
+    template bmSetup(bmSetupBody: stmt): stmt {.immediate.} =
       ## This is executed prior to each bmRun or bmLoops
       template bmSetupImpl*: stmt = bmSetupBody
 
-    template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
+    template bmTeardown(bmTeardownBody: stmt): stmt {.immediate.} =
       ## This is executed after to each bmRun or bmLoops
       template bmTeardownImpl*: stmt = bmTeardownBody
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat,
+    template bmRun(runName: string, timeOrCycles: expr, runStat: var RunningStat,
                     runBody: stmt): stmt {.dirty.} =
       ## Run the runBody using cycles by using an interger for timeOrCycles or using
       ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
@@ -388,7 +388,7 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
           bmTeardownImpl()
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoops*(runName: string, loopCount: int, runStat: var RunningStat,
+    template bmLoops(runName: string, loopCount: int, runStat: var RunningStat,
                       runBody: stmt): stmt {.dirty.} =
       ## Run the runBody loopcount times, optionally each time bmLoops is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
@@ -406,4 +406,46 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
 
     # Instanitate the suite body
     bmSuiteBody
+
+when isMainModule:
+  import unittest
+
+  proc unpackIntToStr(val: int, strg: var string) =
+    var value = val
+    for byteIdx in 0..3:
+      strg.add(cast[char](value and 0xFF))
+      value = value shr 8
+
+  suite "bmTests":
+    test "cpuid 0x0":
+      ## Input: EAX=0
+      ## Return:
+      ##   CpuId.eax = largest standard function number 
+      ##   CpuId.ebx, ecx, edx = Processor Vendor
+      ##     Intel: ebx=0x756E_6547 ecx=0x6C65_746E edx=0x4965_6E69
+      ##     Amd:   ebx=0x6874_7541 ecx=0x444D_4163 edx=0x6974_6E65
+      var id = cpuid(0)
+      checkpoint("id=" & $id)
+      check(id.eax <= 0x20)
+      check(id.ebx == 0x756E_6547 or id.ebx == 0x6874_7541)
+      check(id.ecx == 0x6C65_746E or id.ecx == 0x444D_4163)
+      check(id.edx == 0x4965_6E69 or id.edx == 0x6974_6E65)
+
+    test "cpuid processor name":
+      ## Verify that we can get a processor name thats reasonable
+      var
+        id: CpuId
+        name: string
+        strg = ""
+        offset = 0
+
+      for eax in 0x8000_0002..0x8000_0004:
+        id = cpuid(eax)
+        unpackIntToStr(id.eax, strg)
+        unpackIntToStr(id.ebx, strg)
+        unpackIntToStr(id.ecx, strg)
+        unpackIntToStr(id.edx, strg)
+
+      # This isn't much of a check but something.Intel is correct not sure about AMD
+      check(strg.startsWith("Intel") or (strg.len > 0 and strg.len < 48))
 
