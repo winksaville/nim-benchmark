@@ -51,51 +51,122 @@ suite "bmTests":
     # This isn't much of a check but something.Intel is correct not sure about AMD
     check(strg.startsWith("Intel") or (strg.len > 0 and strg.len < 48))
 
-  test "measureFor 0.5 seconds":
-    var
-      runTime = 0.1
-      startTime = epochTime()
-      rs = measureFor(runTime, work())
-      duration = epochTime() - startTime
+  test "bmSuite":
+    var bmSuiteCount = 0
 
-    checkpoint("runTime=" & $runTime)
-    checkpoint("startTime=" & $startTime)
-    checkpoint("duration=" & $duration)
-    checkpoint("rs=" & $rs)
-    check(rs.n >= 0)
-    check(rs.min >= 0.0)
-    check(duration * 0.80 <= runTime)
-    check(duration * 1.20 >= runTime)
-    when DBG: fail()
+    check(bmSuiteCount == 0)
+    bmSuite "bmLoops":
+      bmSuiteCount += 1
 
-  test "measureFor 0.5 seconds of cycles":
-    var
-      runTime = 0.1
-      cycles = cyclesToRun(runTime)
-      startTime = epochTime()
-      rs = measureFor(cycles, work())
-      duration = epochTime() - startTime
+      var rs: RunningStat
+      var loops = 0
+      var bmSetupCalled = 0
+      var bmTearDownCalled = 0
 
-    checkpoint("runTime=" & $runTime)
-    checkpoint("cycles=" & $cycles)
-    checkpoint("startTime=" & $startTime)
-    checkpoint("duration=" & $duration)
-    checkpoint("rs=" & $rs)
-    check(rs.n >= 0)
-    check(rs.min >= 0.0)
-    check(duration * 0.80 <= runTime)
-    check(duration * 1.20 >= runTime)
-    when DBG: fail()
+      bmSetup:
+        loops = 0
+        bmSetupCalled += 1
 
-bmSuite "testing echo":
-  var rs: RunningStat
-  var loops = 0
+      bmTearDown:
+        bmTearDownCalled += 1
 
-  bmLoops "loop 10 times", 10, rs:
-    loops += 1
-    echo "loop ", loops
-  echo "rs=", rs
+      bmLoops "loop 10", 10, rs:
+        check(bmSetupCalled == 1)
+        check(bmTearDownCalled == 0)
+        loops += 1
+      checkpoint("loop 10 rs=" & $rs)
+      check(loops == 10)
+      check(bmSetupCalled == 1)
+      check(bmTearDownCalled == 1)
+      check(rs.n == 10)
+      check(rs.min >= 0.0)
 
+      bmLoops "loop 1", 1, rs:
+        loops += 1
+        check(loops == 1)
+        check(bmSetupCalled == 2)
+        check(bmTearDownCalled == 1)
+
+      checkpoint("loop 1 rs=" & $rs)
+      check(loops == 1)
+      check(bmSetupCalled == 2)
+      check(bmTearDownCalled == 2)
+      check(rs.n == 1)
+      check(rs.min >= 0.0)
+
+    check(bmSuiteCount == 1)
+    bmSuite "bmRun":
+      bmSuiteCount += 1
+
+      var rs: RunningStat
+      var loops = 0
+      var bmSetupCalled = 0
+      var bmTearDownCalled = 0
+
+      bmSetup:
+        loops = 0
+        bmSetupCalled += 1
+
+      bmTearDown:
+        bmTearDownCalled += 1
+
+      bmRun "run 0.001 seconds ", 0.001, rs:
+        loops += 1
+        check(bmSetupCalled == 1)
+        check(bmTearDownCalled == 0)
+
+      checkpoint("run 0.001 seconds rs=" & $rs)
+      check(loops > 100)
+      check(bmSetupCalled == 1)
+      check(bmTearDownCalled == 1)
+      check(rs.n > 1)
+      check(rs.min >= 0.0)
+
+      bmRun "run 1 cycle", 1, rs:
+        loops += 1
+        check(bmSetupCalled == 2)
+        check(bmTearDownCalled == 1)
+
+      checkpoint("run 1 cycle rs=" & $rs)
+      check(loops == 1)
+      check(bmSetupCalled == 2)
+      check(bmTearDownCalled == 2)
+      check(rs.n == 1)
+      check(rs.min >= 0.0)
+
+      var cyclesToRunHalfSecond = cyclesToRun(0.5)
+      bmRun "run 0.5 seconds of cycles", cyclesToRunHalfSecond, rs:
+        loops += 1
+        check(bmSetupCalled == 3)
+        check(bmTearDownCalled == 2)
+
+      checkpoint("run 0.5 seconds of cycles rs=" & $rs)
+      check(loops > 1)
+      check(bmSetupCalled == 3)
+      check(bmTearDownCalled == 3)
+      check(rs.n > 1)
+      check(rs.min >= 0.0)
+
+      bmSetup:
+        discard
+      bmTearDown:
+        discard
+
+      loops = 0
+      bmLoops "loop 2", 2, rs:
+        loops += 1
+        check(bmSetupCalled == 3)
+        check(bmTearDownCalled == 3)
+
+      checkpoint("loops 2 rs=" & $rs)
+      check(loops == 2)
+      check(bmSetupCalled == 3)
+      check(bmTearDownCalled == 3)
+      check(rs.n == 2)
+      check(rs.min >= 0.0)
+
+    # Verify both suites executed
+    check(bmSuiteCount == 2)
 
 bmSuite "suite2":
   const

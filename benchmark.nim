@@ -140,7 +140,7 @@ proc rdtscp*(tscAux: var int): int64 {.inline.} =
   tscAux = cast[int](aux)
   result = int64(lo) or (int64(hi) shl 32)
 
-proc getBegCycles*(): int64 {.inline.} =
+proc getBegCycles(): int64 {.inline.} =
   ## Return TSC to be used at the beginning of the measurement.
   cpuid()
   result = rdtsc()
@@ -150,7 +150,7 @@ proc getEndCycles*(): int64 {.inline.} =
   result = rdtscp()
   cpuid()
 
-proc getEndCycles*(tscAux: var int): int64 {.inline.} =
+proc getEndCycles(tscAux: var int): int64 {.inline.} =
   ## Return TSC to be used at the end of the measurement
   ## and write ecx to tscAux. The tscAux value is the
   ## logical cpu number and can be used to determine if
@@ -159,7 +159,7 @@ proc getEndCycles*(tscAux: var int): int64 {.inline.} =
   result = rdtscp(tscAux)
   cpuid()
 
-proc initializeCycles*(tscAux: var int): int {.inline.} =
+proc initializeCycles(tscAux: var int): int {.inline.} =
   ## Initalize as per the ia32-ia64-benchmark document returning
   ## the tsc value as exiting and the tscAux in the var param
   discard getBegCycles()
@@ -191,7 +191,7 @@ proc cps(seconds: float): float =
       return -1.0
   result = (ec - start).toFloat() / seconds
 
-proc cyclesPerSecond*(seconds: float): float =
+proc cyclesPerSecond(seconds: float): float =
   ## Call cps several times to maximize the chance
   ## of getting a good value
   for i in 0..2:
@@ -201,14 +201,14 @@ proc cyclesPerSecond*(seconds: float): float =
   result = -1.0
 
 proc cyclesToRun*(seconds: float, cpsTime: float = 0.25): int =
-  ## Returns the number of cycles that will can be sent to bmRun
+  ## Returns the number of cycles that can be passed to bmRun
   for i in 0..2:
     var cyclesPerSecond = cps(cpsTime)
     if cyclesPerSecond > 0.0:
       return round(cyclesPerSecond * seconds)
   result = -1
 
-template measureFor*(cycles: int, body: stmt): RunningStat =
+template measureFor(cycles: int, body: stmt): RunningStat =
   ## Meaure the execution time of body for cycles count of TSC
   ## returning the RunningStat for the loop timings. If
   ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
@@ -249,8 +249,7 @@ template measureFor*(cycles: int, body: stmt): RunningStat =
       result.push(duration)
   result
 
-template measureFor*(seconds: float, body: stmt): RunningStat =
-  ## INTERNAL only
+template measureFor(seconds: float, body: stmt): RunningStat =
   ## Meaure the execution time of body for seconds period of time
   ## returning the RunningStat for the loop timings. If
   ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
@@ -288,8 +287,7 @@ template measureFor*(seconds: float, body: stmt): RunningStat =
       result.push(duration)
   result
 
-template measureLoops*(loopCount: int, body: stmt): RunningStat =
-  ## INTERNAL only
+template measureLoops(loopCount: int, body: stmt): RunningStat =
   ## Meaure the execution time of body for seconds period of time
   ## returning the RunningStat for the loop timings. If
   ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
@@ -337,13 +335,15 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmRun or bmLoops
   ##
   ##::
-  ##  template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat, runBody: stmt): stmt
+  ##  template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat,
+  ##    runBody: stmt): stmt
   ##    ## Run the runBody using cycles by using an interger for timeOrCycles or using
   ##    ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
   ##    ## it will invoke bmSetup or bmTeardown if they've been overridden.
   ##
   ##::
-  ##  template bmLoops*(runName: string, loopCount: int, runStat: var RunningStat, runBody: stmt): stmt {.immediate, dirty.} =
+  ##  template bmLoops*(runName: string, loopCount: int, runStat: var RunningStat,
+  ##    runBody: stmt): stmt
   ##    ## Run the runBody loopcount times, optionally each time bmLoops is invoked
   ##    ## it will invoke bmSetup or bmTeardown if they've been overridden.
   block:
@@ -352,6 +352,7 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
 
     var
       bmSuiteName {.inject.} = suiteName
+      bmVerbosity {.inject.} = 0
 
     when DBG: echo "suiteName=", bmSuiteName
 
@@ -361,16 +362,15 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
 
     template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
       ## This is executed prior to each bmRun or bmLoops
-
       template bmSetupImpl*: stmt = bmSetupBody
 
     template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
       ## This is executed after to each bmRun or bmLoops
-
       template bmTeardownImpl*: stmt = bmTeardownBody
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat, runBody: stmt): stmt {.immediate, dirty.} =
+    template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat,
+                    runBody: stmt): stmt {.dirty.} =
       ## Run the runBody using cycles by using an interger for timeOrCycles or using
       ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
@@ -378,7 +378,7 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
         var bmRunName {.inject.} = runName
         #var rslt: RunningStat
         try:
-          echo bmSuiteName, ".", bmRunName
+          if bmVerbosity > 0: echo bmSuiteName, ".", bmRunName
           bmSetupImpl()
           runStat = measureFor(timeOrCycles, runBody)
           when DBG: echo "bmRun: runStat=", runStat
@@ -388,15 +388,14 @@ template bmSuite*(suiteName: string, bmSuiteBody: stmt): stmt {.immediate.} =
           bmTeardownImpl()
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoops*(runName: string, loopCount: int, runStat: var RunningStat, runBody: stmt): stmt {.immediate, dirty.} =
+    template bmLoops*(runName: string, loopCount: int, runStat: var RunningStat,
+                      runBody: stmt): stmt {.dirty.} =
       ## Run the runBody loopcount times, optionally each time bmLoops is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
-
       block:
         var bmRunName {.inject.} = runName # This must be {.inject.} to be available to innerBody even with {.dirty.}???
-        #var rslt: RunningStat
         try:
-          echo bmSuiteName, ".", bmRunName
+          if bmVerbosity > 0: echo bmSuiteName, ".", bmRunName
           bmSetupImpl()
           runStat = measureLoops(loopCount, runBody)
           when DBG: echo "bmRun: runStat=", runStat
