@@ -68,8 +68,8 @@
 #   "How to Benchmark Code Execution Times on Intel IA-32
 #   and IA-64 Instruction Set Architectures"
 # Here is a short link to the document: http://goo.gl/tzKu65
-import math, times, os, posix, strutils
-export math
+import algorithm, math, times, os, posix, strutils
+export math, algorithm
 
 const
   DEFAULT_CPS_RUNTIME = 0.25
@@ -345,6 +345,47 @@ template measureLoops(loopCount: int, verbosity: Verbosity, body: stmt): Running
   result
 
 
+template measureX(verbosity: Verbosity, durations: var openarray[float], runStats: var openarray[RunningStat], body: stmt) =
+  var
+    ok = true
+    tscAuxInitial: int
+    tscAuxNow: int
+    bc : int64
+    ec : int64
+
+  if DBG(verbosity): echo "measurX: loopCount=", runStats.len
+
+  discard initializeCycles(tscAuxInitial)
+  for i in 0..runStats.len-1:
+    # TODO: Make the body of this loop a template
+    bc = getBegCycles()
+    body
+    ec = getEndCycles(tscAuxNow)
+    durations[i] = float(ec - bc)
+    if DBGV(verbosity): echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=", float(bc)
+    if tscAuxInitial != tscAuxNow:
+      # Switched CPU we can't trust rdtsc
+      if NRM(verbosity): echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
+      ok = false;
+      break
+  if ok:
+    sort(durations, system.cmp[float])
+    for i in 0..runStats.len-1:
+      rss[i].push(durations[i])
+
+
+template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarray[RunningStat], body: stmt) =
+  ## Meaure the execution time of body for seconds period of time
+  ## returning the array of RunningStat for the loop timings. If
+  ## TODO: errors ????? RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
+  if DBG(verbosity): echo "measureForX: seconds=", seconds
+
+  var
+    durations = newSeq[float](runStats.len)
+    endTime = epochTime() + seconds
+  while epochTime() <= endTime:
+    measureX(verbosity, durations, runStats, body)
+
 proc bmEchoResults(runStat: RunningStat, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
   ## Echo to the console the results of a run. To override
@@ -417,8 +458,8 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
         except:
           if NRM(verbosity): echo "bmRun ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
         finally:
-          if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
           bmTeardownImpl()
+          if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmLoop(nameRun: string, loopCount: int, runStat: var RunningStat,
@@ -433,8 +474,28 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
         except:
           if NRM(verbosity): echo "bmLoop ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
         finally:
-          if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
           bmTeardownImpl()
+          if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
+
+    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
+    template bmRunX(nameRun: string, seconds: float, runStats: var openarray[RunningStat],
+                    runBody: stmt): stmt {.dirty.} =
+      ## Run the runBody using cycles by using an interger for timeOrCycles or using
+      ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
+      ## it will invoke bmSetup or bmTeardown if they've been overridden.
+      block:
+        var runXName {.inject.} = nameRun
+        #var rslt: RunningStat
+        try:
+          bmSetupImpl()
+          measureForX(seconds, verbosity, runStats, runBody)
+        except:
+          if NRM(verbosity): echo "bmRun ", suiteName, ".", runXName, ": exception=", getCurrentExceptionMsg()
+        finally:
+          bmTeardownImpl()
+          if NRM(verbosity):
+            for i in 0..runStats.len-1:
+              bmEchoResults(runStats[i], verbosity, suiteName, runXName, cyclesPerSec)
 
     # Instanitate the suite body
     bmSuiteBody
@@ -562,4 +623,28 @@ when isMainModule:
         check(bmTearDownCalled == 2)
         check(rs.n > 1)
         check(rs.min >= 0.0)
+
+      bmSuite "bmRunX":
+        var
+          rss: array[0..10, RunningStat]
+          loops = 0
+          bmSetupCalled = 0
+          bmTearDownCalled = 0
+
+        bmSetup:
+          loops = 0
+          bmSetupCalled += 1
+
+        bmTearDown:
+          verbosity = Verbosity.dbg
+          bmTearDownCalled += 1
+
+        bmRunX "run 2 seconds", 2.0, rss:
+          atomicInc(loops)
+          check(bmSetupCalled == 1)
+          check(bmTearDownCalled == 0)
+
+        check(loops > 100)
+        check(bmSetupCalled == 1)
+        check(bmTearDownCalled == 1)
 
