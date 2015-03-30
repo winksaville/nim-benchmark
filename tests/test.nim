@@ -1,5 +1,4 @@
-import benchmark
-import math, times, os, unittest, posix, strutils
+import benchmark, unittest
 
 const
   DBG = false
@@ -18,7 +17,7 @@ suite "bmTests":
     bmSuite "bmLoop":
       bmSuiteCount += 1
 
-      var rs: RunningStat
+      var bms: BmStats
       var loops = 0
       var bmSetupCalled = 0
       var bmTearDownCalled = 0
@@ -30,35 +29,36 @@ suite "bmTests":
       bmTearDown:
         bmTearDownCalled += 1
 
-      bmLoop "loop 10", 10, rs:
+      bmLoop "loop 10", 10, bms:
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 0)
         loops += 1
-      checkpoint("loop 10 rs=" & $rs)
+      checkpoint("loop 10 bms=" & $bms)
       check(loops == 10)
       check(bmSetupCalled == 1)
       check(bmTearDownCalled == 1)
-      check(rs.n == 10)
-      check(rs.min >= 0.0)
+      check(bms.n == 10)
+      check(bms.min >= 0.0)
 
-      bmLoop "loop 1", 1, rs:
+      bmLoop "loop 1", 1, bms:
         loops += 1
         check(loops == 1)
         check(bmSetupCalled == 2)
         check(bmTearDownCalled == 1)
 
-      checkpoint("loop 1 rs=" & $rs)
+      checkpoint("loop 1 bms=" & $bms)
       check(loops == 1)
       check(bmSetupCalled == 2)
       check(bmTearDownCalled == 2)
-      check(rs.n == 1)
-      check(rs.min >= 0.0)
+      check(bms.n == 1)
+      check(bms.min >= 0.0)
 
     check(bmSuiteCount == 1)
-    bmSuite "bmRun":
+
+    bmSuite "bmTime":
       bmSuiteCount += 1
 
-      var rs: RunningStat
+      var bms: BmStats
       var loops = 0
       var bmSetupCalled = 0
       var bmTearDownCalled = 0
@@ -70,42 +70,17 @@ suite "bmTests":
       bmTearDown:
         bmTearDownCalled += 1
 
-      bmRun "run 0.001 seconds ", 0.001, rs:
+      bmTime "run 0.001 seconds ", 0.001, bms:
         loops += 1
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 0)
 
-      checkpoint("run 0.001 seconds rs=" & $rs)
+      checkpoint("run 0.001 seconds bms=" & $bms)
       check(loops > 100)
       check(bmSetupCalled == 1)
       check(bmTearDownCalled == 1)
-      check(rs.n > 1)
-      check(rs.min >= 0.0)
-
-      bmRun "run 1 cycle", 1, rs:
-        loops += 1
-        check(bmSetupCalled == 2)
-        check(bmTearDownCalled == 1)
-
-      checkpoint("run 1 cycle rs=" & $rs)
-      check(loops == 1)
-      check(bmSetupCalled == 2)
-      check(bmTearDownCalled == 2)
-      check(rs.n == 1)
-      check(rs.min >= 0.0)
-
-      var cyclesToRunHalfSecond = cyclesToRun(0.5)
-      bmRun "run 0.5 seconds of cycles", cyclesToRunHalfSecond, rs:
-        loops += 1
-        check(bmSetupCalled == 3)
-        check(bmTearDownCalled == 2)
-
-      checkpoint("run 0.5 seconds of cycles rs=" & $rs)
-      check(loops > 1)
-      check(bmSetupCalled == 3)
-      check(bmTearDownCalled == 3)
-      check(rs.n > 1)
-      check(rs.min >= 0.0)
+      check(bms.n > 1)
+      check(bms.min >= 0.0)
 
       bmSetup:
         discard
@@ -113,17 +88,17 @@ suite "bmTests":
         discard
 
       loops = 0
-      bmLoop "loop 2", 2, rs:
+      bmLoop "loop 2", 2, bms:
         loops += 1
-        check(bmSetupCalled == 3)
-        check(bmTearDownCalled == 3)
+        check(bmSetupCalled == 1)
+        check(bmTearDownCalled == 1)
 
-      checkpoint("loops 2 rs=" & $rs)
+      checkpoint("loops 2 bms=" & $bms)
       check(loops == 2)
-      check(bmSetupCalled == 3)
-      check(bmTearDownCalled == 3)
-      check(rs.n == 2)
-      check(rs.min >= 0.0)
+      check(bmSetupCalled == 1)
+      check(bmTearDownCalled == 1)
+      check(bms.n == 2)
+      check(bms.min >= 0.0)
 
     # Verify both suites executed
     check(bmSuiteCount == 2)

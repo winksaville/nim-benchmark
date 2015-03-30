@@ -1,8 +1,8 @@
 ## Benchmark will measure the time it takes for some arbitrary
-## code to excute in the body of templates bmLoop or bmRun.
+## code to excute in the body of templates bmLoop or bmTime.
 ## These templates use a processr provided instruction, RDTSC on
 ## X86, to measure the number of cycles necessary to run each
-## iteration of the body and reports the results as a RunningStat
+## iteration of the body and reports the results as a BmStats
 ## as defined in the nim math module.
 ##
 ## Example use with the following code in t1.nim:
@@ -12,16 +12,16 @@
 ## import benchmark
 ## 
 ## bmSuite "testing echo":
-##   var rs: RunningStat
+##   var bms: BmStats
 ##   var loops: int
 ## 
 ##   bmSetup:
 ##     loops = 0
 ##
 ##   bmTeardown:
-##     echo "rs=", rs
+##     echo "bms=", bms
 ##   
-##   bmLoop "loop 10 times", 10, rs:
+##   bmLoop "loop 10 times", 10, bms:
 ##     loops += 1
 ##    
 ## And then compiling and running with:
@@ -30,7 +30,7 @@
 ## $ nim c -r --hints:off examples/bmloop
 ## [Linking]
 ## /Users/wink/prgs/nim/benchmark/examples/bmloop
-## measureFor: loopCount=10
+## measureSecs: loopCount=10
 ## duration=148.0 ec=23094928548916.0 bc=23094928548768.0
 ## duration=102.0 ec=23094928649480.0 bc=23094928649378.0
 ## duration=82.0 ec=23094928657624.0 bc=23094928657542.0
@@ -48,19 +48,19 @@
 ##    runStat.sum  = sum of the time for each loop in cycles
 ##    runStat.min  = The cycles needed for the fastest loop
 ##    runStat.max  = The cycles needed for the slowest loop
-##    runStat.mean = rs.sum / rs.n
+##    runStat.mean = bms.sum / bms.n
 ##
 ## In addition to bmLoop, where you define the number of loops, the
-## bmRun template can be used to run for a specified amount of time.
+## bmTime template can be used to run for a specified amount of time.
 ##
-## bmSuite "bmRun example"
+## bmSuite "bmTime example"
 ##   mb
 ## there is also
-## defining the number of loops to measure, the bmRun template
+## defining the number of loops to measure, the bmTime template
 ## can be used to run the body in a loop for a specified period of seconds as
 ## a floating point number. Or a specified number of machine cycles if ToUsage: bmSuite is a template to define a scope for
-## one or more instantiations of bmLoop and bmRun templates. In addition,
-## prior to actually running the body of bmLoop or bmRun the template bmSetup
+## one or more instantiations of bmLoop and bmTime templates. In addition,
+## prior to actually running the body of bmLoop or bmTime the template bmSetup
 ## is invoked and at the conclusion bmTeardown is invoked. See below for
 ## additional details.
 ## 
@@ -75,36 +75,95 @@ const
   DEFAULT_CPS_RUNTIME = 0.25
 
 type
-  ## The registers returned by cpuid instruction.
-  CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]
-
   Verbosity* {.pure.} = enum
     none = -1
     normal = 0
     dbg = 1
     dbgv = 2
 
-proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float
+proc NONE*(verbosity: Verbosity): bool {.inline.} =
+  ## Return true if Verbosity == Verbosity.none
+  result = verbosity == Verbosity.normal
 
-var
-  gBmCyclesPerSecond* = cyclesPerSecond()
-
-proc NRM(verbosity: Verbosity): bool {.inline.} =
+proc NRM*(verbosity: Verbosity): bool {.inline.} =
+  ## Return true if Verbosity >= Verbosity.normal
   result = verbosity >= Verbosity.normal
 
-proc DBG(verbosity: Verbosity): bool {.inline.} =
+proc DBG*(verbosity: Verbosity): bool {.inline.} =
+  ## Return true if Verbosity >= Verbosity.dbg
   result = verbosity >= Verbosity.dbg
 
-proc DBGV(verbosity: Verbosity): bool {.inline.} =
+proc DBGV*(verbosity: Verbosity): bool {.inline.} =
+  ## Return true if Verbosity >= Verbosity.dbgv
   result = verbosity >= Verbosity.dbgv
 
-proc `$`*(r: RunningStat): string =
-  ## Print the RunningStat.
-  "{n=" & $r.n & " sum=" & $r.sum & " min=" & $r.min & " max=" & $r.max & " mean=" & $r.mean & "}"
+type
+  # RunningStat with and minC and maxC
+  BmStats* = object                     ## statistical benchmark data
+    n*: int                             ## number of pushed data
+    minC*: int                          ## number of data points == min
+    maxC*: int                          ## number of data points == max
+    sum*, min*, max*, mean*: float      ## self-explaining
+    oldM, oldS, newS: float
+
+proc push*(s: var BmStats, x: float) =
+  ## pushes a value `x` for processing
+  inc(s.n)
+  # See Knuth TAOCP vol 2, 3rd edition, page 232
+  if s.n == 1:
+    s.min = x
+    s.minC = 1
+    s.max = x
+    s.minC = 1
+    s.oldM = x
+    s.mean = x
+    s.oldS = 0.0
+  else:
+    if s.min == x:
+      s.minC += 1
+    elif s.min > x:
+      s.min = x
+      s.minC = 1
+
+    if s.max == x:
+      s.maxC += 1
+    elif s.max < x:
+      s.max = x
+      s.maxC = 1
+    s.mean = s.oldM + (x - s.oldM)/toFloat(s.n)
+    s.newS = s.oldS + (x - s.oldM)*(x - s.mean)
+
+    # set up for next iteration:
+    s.oldM = s.mean
+    s.oldS = s.newS
+  s.sum = s.sum + x
+  
+proc push*(s: var BmStats, x: int) = 
+  ## pushes a value `x` for processing. `x` is simply converted to ``float``
+  ## and the other push operation is called.
+  push(s, toFloat(x))
+  
+proc variance*(s: BmStats): float = 
+  ## computes the current variance of `s`
+  if s.n > 1: result = s.newS / (toFloat(s.n - 1))
+
+proc standardDeviation*(s: BmStats): float = 
+  ## computes the current standard deviation of `s`
+  result = sqrt(variance(s))
+
+proc `$`*(s: BmStats): string =
+  ## Print the BmStats.
+  "{n=" & $s.n & " sum=" & $s.sum & " min=" & $s.min & " minC=" & $s.minC &
+    " max=" & $s.max & " maxC=" & $s.maxC & " mean=" & $s.mean & "}"
+
+type
+  ## The registers returned by cpuid instruction.
+  CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]
 
 proc `$`(cpuid: CpuId): string =
   ## Print the CpuId.
-  "{ eax=0x" & toHex(cpuid.eax, 8) & " ebx=0x" & toHex(cpuid.ebx, 8) & " ecx=0x" & toHex(cpuid.ecx, 8) & " edx=0x" & toHex(cpuid.edx, 8) & "}"
+  "{ eax=0x" & toHex(cpuid.eax, 8) & " ebx=0x" & toHex(cpuid.ebx, 8) &
+    " ecx=0x" & toHex(cpuid.ecx, 8) & " edx=0x" & toHex(cpuid.edx, 8) & "}"
 
 proc cpuid(eax_param: int, ecx_param: int): CpuId =
   ## Execute cpuid instruction wih EAX = eax_param and ECX = ecx_param.
@@ -226,7 +285,6 @@ proc cps(seconds: float): float =
       return -1.0
   result = (ec - start).toFloat() / seconds
 
-
 proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
   ## Call cps several times to maximize the chance
   ## of getting a good value
@@ -236,64 +294,19 @@ proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
       return result
   result = -1.0
 
-proc cyclesToRun*(seconds: float, cpsRunTime: float = DEFAULT_CPS_RUNTIME): int =
-  ## Returns the number of cycles that can be passed to bmRun
-  ## or -1 if in indeterminate
-  var cps = cyclesPerSecond(cpsRunTime)
-  if cps < 0.0:
-    result = -1
-  else:
-    result = round(cps * seconds)
-
-template measureFor(cycles: int, verbosity: Verbosity, body: stmt): RunningStat =
-  ## Meaure the execution time of body for cycles count of TSC
-  ## returning the RunningStat for the loop timings. If
-  ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
-  var
-    result: RunningStat
-    tscAuxInitial: int
-    tscAuxNow: int
-    start: int
-    bc : int64
-    ec : int64
-
-  if DBG(verbosity): echo "measureFor: cycles=", cycles
-
-  start = initializeCycles(tscAuxInitial)
-  ec = start
-  if DBG(verbosity): echo "start=", start, " tscAuxInitial=0x", toHex(tscAuxInitial, 4)
-  while cycles > ec - start:
-    # TODO: Make the body of this loop a template
-    bc = getBegCycles()
-    body
-    ec = getEndCycles(tscAuxNow)
-    var duration = float(ec - bc)
-    if DBGV(verbosity): echo "duration=", duration, " ec=", float(ec), " bc=", float(bc)
-    if tscAuxInitial != tscAuxNow:
-      # Switched CPU we can't trust rdtsc
-      if NRM(verbosity): echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
-      result.n = -1
-      result.min = -1
-      break
-    if duration < 0.0:
-      if NRM(verbosity): echo "ignore duration=", duration, " ec=", float(ec), " bc=", float(bc)
-    else:
-      result.push(duration)
-  result
-
-template measureFor(seconds: float, verbosity: Verbosity, body: stmt): RunningStat =
+template measureSecs(seconds: float, verbosity: Verbosity, body: stmt): BmStats =
   ## Meaure the execution time of body for seconds period of time
-  ## returning the RunningStat for the loop timings. If
-  ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
+  ## returning the BmStats for the loop timings. If
+  ## BmStats.n = -1 and BmStats.min == -1 then an error occured.
   var
-    result: RunningStat
+    result: BmStats
     tscAuxInitial: int
     tscAuxNow: int
     endTime: float
     bc : int64
     ec : int64
 
-  if DBG(verbosity): echo "measureFor: seconds=", seconds
+  if DBG(verbosity): echo "measureSecs: seconds=", seconds
 
   endTime = epochTime() + seconds
   discard initializeCycles(tscAuxInitial)
@@ -316,18 +329,18 @@ template measureFor(seconds: float, verbosity: Verbosity, body: stmt): RunningSt
       result.push(duration)
   result
 
-template measureLoops(loopCount: int, verbosity: Verbosity, body: stmt): RunningStat =
+template measureLoops(loopCount: int, verbosity: Verbosity, body: stmt): BmStats =
   ## Meaure the execution time of body for seconds period of time
-  ## returning the RunningStat for the loop timings. If
-  ## RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
+  ## returning the BmStats for the loop timings. If
+  ## BmStats.n = -1 and BmStats.min == -1 then an error occured.
   var
-    result: RunningStat
+    result: BmStats
     tscAuxInitial: int
     tscAuxNow: int
     bc : int64
     ec : int64
 
-  if DBG(verbosity): echo "measureFor: loopCount=", loopCount
+  if DBG(verbosity): echo "measureLoops: loopCount=", loopCount
 
   discard initializeCycles(tscAuxInitial)
   for i in 0..loopCount-1:
@@ -350,7 +363,7 @@ template measureLoops(loopCount: int, verbosity: Verbosity, body: stmt): Running
   result
 
 
-template measureX(verbosity: Verbosity, durations: var openarray[float], runStats: var openarray[RunningStat], body: stmt): bool =
+template measureX(verbosity: Verbosity, durations: var openarray[float], bmStats: var openarray[BmStats], body: stmt): bool =
   var
     ok: bool = true
     tscAuxInitial: int
@@ -358,10 +371,10 @@ template measureX(verbosity: Verbosity, durations: var openarray[float], runStat
     bc : int64
     ec : int64
 
-  if DBG(verbosity): echo "measurX: loopCount=", runStats.len
+  if DBG(verbosity): echo "measurX: loopCount=", bmStats.len
 
   discard initializeCycles(tscAuxInitial)
-  for i in 0..runStats.len-1:
+  for i in 0..bmStats.len-1:
     # TODO: Make the body of this loop a template
     bc = getBegCycles()
     body
@@ -375,18 +388,18 @@ template measureX(verbosity: Verbosity, durations: var openarray[float], runStat
       break
   if ok:
     sort(durations, system.cmp[float])
-    for i in 0..runStats.len-1:
+    for i in 0..bmStats.len-1:
       rss[i].push(durations[i])
   ok
 
-template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarray[RunningStat], body: stmt) =
+template measureSecsX(seconds: float, verbosity: Verbosity, bmStats: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
-  ## returning the array of RunningStat for the loop timings. If
-  ## TODO: errors ????? RunningStat.n = -1 and RunningStat.min == -1 then an error occured.
-  if DBG(verbosity): echo "measureForX: seconds=", seconds
+  ## returning the array of BmStats for the loop timings. If
+  ## TODO: errors ????? BmStats.n = -1 and BmStats.min == -1 then an error occured.
+  if DBG(verbosity): echo "measureSecsX: seconds=", seconds
 
   var
-    durations = newSeq[float](runStats.len)
+    durations = newSeq[float](bmStats.len)
     runDuration = seconds
     start = epochTime()
     cur = start
@@ -395,11 +408,11 @@ template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarr
   # is simpler because we don't have to pass or calculate
   # the current cycles per second.
   while runDuration > cur - start:
-    if not measureX(verbosity, durations, runStats, body):
-      if DBG(verbosity): echo "echo measureForX: bad measurement"
+    if not measureX(verbosity, durations, bmStats, body):
+      if DBG(verbosity): echo "echo measureSecsX: bad measurement"
     cur = epochTime()
 
-proc bmEchoResults(runStat: RunningStat, verbosity: Verbosity,
+proc bmEchoResults(runStat: BmStats, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
@@ -410,27 +423,26 @@ proc bmEchoResults(runStat: RunningStat, verbosity: Verbosity,
 
 template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
   ## Begin a benchmark suite. May contian one or more of bmSetup, bmTeardown,
-  ## bmRun, bmLoop which are detailed below:
+  ## bmTime, bmLoop which are detailed below:
   ##::
   ##  template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed prior to each bmRun or bmLoop
+  ##    ## This is executed prior to each bmTime or bmLoop
   ##
   ##::
   ##  template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed after to each bmRun or bmLoop
+  ##    ## This is executed after to each bmTime or bmLoop
   ##
   ##::
-  ##  template bmRun*(runName: string, timeOrCycles: expr, runStat: var RunningStat,
-  ##    runBody: stmt): stmt
-  ##    ## Run the runBody using cycles by using an interger for timeOrCycles or using
-  ##    ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
-  ##    ## it will invoke bmSetup or bmTeardown if they've been overridden.
+  ##  template bmTime*(runName: string, seconds: float,
+  ##    runStat: var BmStats, runBody: stmt): stmt
+  ##    ## Run the runBody for time in seconds. Optionally each time bmTime is
+  ##    ## invoked bmSetup and bmTeardown and they maybe overridden.
   ##
   ##::
-  ##  template bmLoop*(runName: string, loopCount: int, runStat: var RunningStat,
-  ##    runBody: stmt): stmt
-  ##    ## Run the runBody loopcount times, optionally each time bmLoop is invoked
-  ##    ## it will invoke bmSetup or bmTeardown if they've been overridden.
+  ##  template bmLoop*(runName: string, loopCount: int,
+  ##    runStat: var BmStats, runBody: stmt): stmt
+  ##    ## Run the runBody loopcount times, optionally each time bmLoop is
+  ##    ## invoked bmSetup and bmTeardown and they maybe overridden.
   ##
   block:
     var
@@ -444,38 +456,38 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
     #proc cyclesToSeconds(cycles: float): float =
     #  result = cycles / cyclesPerSec
 
-    # The implementation of setup/teardown when invoked by bmRun
+    # The implementation of setup/teardown when invoked by bmTime
     template bmSetupImpl*: stmt = discard
     template bmTeardownImpl*: stmt = discard
 
     template bmSetup(bmSetupBody: stmt): stmt {.immediate.} =
-      ## This is executed prior to each bmRun or bmLoop
+      ## This is executed prior to each bmTime or bmLoop
       template bmSetupImpl*: stmt = bmSetupBody
 
     template bmTeardown(bmTeardownBody: stmt): stmt {.immediate.} =
-      ## This is executed after to each bmRun or bmLoop
+      ## This is executed after to each bmTime or bmLoop
       template bmTeardownImpl*: stmt = bmTeardownBody
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmRun(nameRun: string, timeOrCycles: expr, runStat: var RunningStat,
+    template bmTime(nameRun: string, seconds: float, runStat: var BmStats,
                     runBody: stmt): stmt {.dirty.} =
       ## Run the runBody using cycles by using an interger for timeOrCycles or using
-      ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
+      ## time by passing a float in timeOrCycles. Optionally each time bmTime is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
       block:
         var runName {.inject.} = nameRun
-        #var rslt: RunningStat
+        #var rslt: BmStats
         try:
           bmSetupImpl()
-          runStat = measureFor(timeOrCycles, verbosity, runBody)
+          runStat = measureSecs(seconds, verbosity, runBody)
         except:
-          if NRM(verbosity): echo "bmRun ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
+          if NRM(verbosity): echo "bmTime ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
           if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoop(nameRun: string, loopCount: int, runStat: var RunningStat,
+    template bmLoop(nameRun: string, loopCount: int, runStat: var BmStats,
                       runBody: stmt): stmt {.dirty.} =
       ## Run the runBody loopcount times, optionally each time bmLoop is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
@@ -491,24 +503,24 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
           if NRM(verbosity): bmEchoResults(runStat, verbosity, suiteName, runName, cyclesPerSec)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmRunX(nameRun: string, seconds: float, runStats: var openarray[RunningStat],
+    template bmTimeX(nameRun: string, seconds: float, bmStats: var openarray[BmStats],
                     runBody: stmt): stmt {.dirty.} =
       ## Run the runBody using cycles by using an interger for timeOrCycles or using
-      ## time by passing a float in timeOrCycles. Optionally each time bmRun is invoked
+      ## time by passing a float in timeOrCycles. Optionally each time bmTime is invoked
       ## it will invoke bmSetup or bmTeardown if they've been overridden.
       block:
         var runXName {.inject.} = nameRun
-        #var rslt: RunningStat
+        #var rslt: BmStats
         try:
           bmSetupImpl()
-          measureForX(seconds, verbosity, runStats, runBody)
+          measureSecsX(seconds, verbosity, bmStats, runBody)
         except:
-          if NRM(verbosity): echo "bmRun ", suiteName, ".", runXName, ": exception=", getCurrentExceptionMsg()
+          if NRM(verbosity): echo "bmTime ", suiteName, ".", runXName, ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
           if NRM(verbosity):
-            for i in 0..runStats.len-1:
-              bmEchoResults(runStats[i], verbosity, suiteName, runXName, cyclesPerSec)
+            for i in 0..bmStats.len-1:
+              bmEchoResults(bmStats[i], verbosity, suiteName, runXName, cyclesPerSec)
 
     # Instanitate the suite body
     bmSuiteBody
@@ -561,21 +573,13 @@ when isMainModule:
       var cycles = cyclesPerSecond(0.25)
       check(cycles > 0)
 
-    test "cyclesToRun":
-      const runTime = 5.0
-      var cycles = cyclesToRun(runTime)
-      var cps = cyclesPerSecond(0.25)
-      check((cycles.float > (runTime * cps  * 0.95)) and
-            (cycles.float < (runtime * cps  * 1.05)))
-
-
   suite "test bm":
     ## Some simple tests
     test "bmSuite":
 
       bmSuite "bmLoop":
         var
-          rs: RunningStat
+          bms: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -587,20 +591,20 @@ when isMainModule:
         bmTearDown:
           bmTearDownCalled += 1
 
-        bmLoop "loop 1", 1, rs:
+        bmLoop "loop 1", 1, bms:
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
           loops += 1
-        checkpoint("loop 1 rs=" & $rs)
+        checkpoint("loop 1 bms=" & $bms)
         check(loops == 1)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
-        check(rs.n == 1)
-        check(rs.min >= 0.0)
+        check(bms.n == 1)
+        check(bms.min >= 0.0)
 
-      bmSuite "bmRun":
+      bmSuite "bmTime":
         var
-          rs: RunningStat
+          bms: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -612,34 +616,21 @@ when isMainModule:
         bmTearDown:
           bmTearDownCalled += 1
 
-        bmRun "run 0.001 seconds ", 0.001, rs:
+        bmTime "run 0.001 seconds ", 0.001, bms:
           loops += 1
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
 
-        checkpoint("run 0.001 seconds rs=" & $rs)
+        checkpoint("run 0.001 seconds bms=" & $bms)
         check(loops > 100)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
-        check(rs.n > 1)
-        check(rs.min >= 0.0)
+        check(bms.n > 1)
+        check(bms.min >= 0.0)
 
-        var cyclesToRunHalfSecond = cyclesToRun(0.5)
-        bmRun "run 0.5 seconds of cycles", cyclesToRunHalfSecond, rs:
-          loops += 1
-          check(bmSetupCalled == 2)
-          check(bmTearDownCalled == 1)
-
-        checkpoint("run 0.5 seconds of cycles rs=" & $rs)
-        check(loops > 1)
-        check(bmSetupCalled == 2)
-        check(bmTearDownCalled == 2)
-        check(rs.n > 1)
-        check(rs.min >= 0.0)
-
-      bmSuite "bmRunX":
+      bmSuite "bmTimeX":
         var
-          rss: array[0..10, RunningStat]
+          rss: array[0..10, BmStats]
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -652,7 +643,7 @@ when isMainModule:
           verbosity = Verbosity.dbg
           bmTearDownCalled += 1
 
-        bmRunX "run 2 seconds", 2.0, rss:
+        bmTimeX "run 2 seconds", 2.0, rss:
           atomicInc(loops)
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
