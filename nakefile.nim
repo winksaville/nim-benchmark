@@ -1,12 +1,16 @@
 import nake
 
 const
-  buildArtifacts = @["benchmark", "benchmark.html", "nimcache", "t", "tests/test", "tests/test.html", "tests/nimcache"]
+  buildArtifacts =
+    @["benchmark", "benchmark.html", "nimcache", "t",
+      "tests/test", "tests/test.html", "tests/nimcache",
+      "examples/bmrun", "examples/bmloop", "examples/nimcache"]
   buildFlags = "-d:release --verbosity:0 --hints:off --warnings:off --threads:on"
   #buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --parallelBuild:1"
 
   docFlags = ""
   docFiles = @["benchmark.nim"]
+  exampleFiles = @["examples/bmloop.nim", "examples/bmrun.nim"]
 
 task defaultTask, "Clean, Compile and run the tests":
   runTask "clean"
@@ -14,24 +18,24 @@ task defaultTask, "Clean, Compile and run the tests":
   runTask "run-tests"
 
 task "bm", "Build and run benchmark for its tests":
-  if shell(nimExe, "c -r",  buildFlags, "benchmark.nim"):
-    echo "success"
-  else:
+  if not shell(nimExe, "c -r",  buildFlags, "benchmark.nim"):
     echo "error compiling"
     quit 1
 
 task "docs", "Buiild the documents":
   for file in docFiles:
-    if shell(nimExe, "doc", docFlags, file):
-      echo "success"
-    else:
+    if not shell(nimExe, "doc", docFlags, file):
       echo "error generating docs"
       quit 1
 
+task "examples", "Build and run the examples":
+  for file in exampleFiles:
+    if not shell(nimExe, "c -r",  buildFlags, file):
+      echo "error compiling"
+      quit 1
+
 task "build-tests", "Build the tests":
-  if shell(nimExe, "c",  buildFlags, "tests/test.nim"):
-    echo "success"
-  else:
+  if not shell(nimExe, "c",  buildFlags, "tests/test.nim"):
     echo "error compiling"
     quit 1
 

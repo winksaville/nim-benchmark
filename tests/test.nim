@@ -15,7 +15,7 @@ suite "bmTests":
     var bmSuiteCount = 0
 
     check(bmSuiteCount == 0)
-    bmSuite "bmLoops":
+    bmSuite "bmLoop":
       bmSuiteCount += 1
 
       var rs: RunningStat
@@ -30,7 +30,7 @@ suite "bmTests":
       bmTearDown:
         bmTearDownCalled += 1
 
-      bmLoops "loop 10", 10, rs:
+      bmLoop "loop 10", 10, rs:
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 0)
         loops += 1
@@ -41,7 +41,7 @@ suite "bmTests":
       check(rs.n == 10)
       check(rs.min >= 0.0)
 
-      bmLoops "loop 1", 1, rs:
+      bmLoop "loop 1", 1, rs:
         loops += 1
         check(loops == 1)
         check(bmSetupCalled == 2)
@@ -113,7 +113,7 @@ suite "bmTests":
         discard
 
       loops = 0
-      bmLoops "loop 2", 2, rs:
+      bmLoop "loop 2", 2, rs:
         loops += 1
         check(bmSetupCalled == 3)
         check(bmTearDownCalled == 3)
