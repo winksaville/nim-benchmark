@@ -84,6 +84,11 @@ type
     dbg = 1
     dbgv = 2
 
+proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float
+
+var
+  gBmCyclesPerSecond* = cyclesPerSecond()
+
 proc NRM(verbosity: Verbosity): bool {.inline.} =
   result = verbosity >= Verbosity.normal
 
@@ -345,9 +350,9 @@ template measureLoops(loopCount: int, verbosity: Verbosity, body: stmt): Running
   result
 
 
-template measureX(verbosity: Verbosity, durations: var openarray[float], runStats: var openarray[RunningStat], body: stmt) =
+template measureX(verbosity: Verbosity, durations: var openarray[float], runStats: var openarray[RunningStat], body: stmt): bool =
   var
-    ok = true
+    ok: bool = true
     tscAuxInitial: int
     tscAuxNow: int
     bc : int64
@@ -372,7 +377,7 @@ template measureX(verbosity: Verbosity, durations: var openarray[float], runStat
     sort(durations, system.cmp[float])
     for i in 0..runStats.len-1:
       rss[i].push(durations[i])
-
+  ok
 
 template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarray[RunningStat], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
@@ -382,9 +387,16 @@ template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarr
 
   var
     durations = newSeq[float](runStats.len)
-    endTime = epochTime() + seconds
-  while epochTime() <= endTime:
-    measureX(verbosity, durations, runStats, body)
+    runDuration = round(seconds * gBmCyclesPerSecond)
+    #runDuration = seconds
+    start = getBegCycles()
+    #start = epochTime()
+    cur = start
+  while runDuration > cur - start:
+    if not measureX(verbosity, durations, runStats, body):
+      if DBG(verbosity): echo "echo measureForX: bad measurement"
+    cur = getEndCycles()
+    #cur = epochTime()
 
 proc bmEchoResults(runStat: RunningStat, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
@@ -542,7 +554,7 @@ when isMainModule:
 
     test "cpuid ax, cx param":
       ## TODO: Devise a real test for cpuid with two parameters
-      var id = cpuid(0x8000_001D, 0)
+      discard cpuid(0x8000_001D, 0)
 
     test "cyclesPerSecond":
       var cycles = cyclesPerSecond(0.25)
@@ -639,6 +651,7 @@ when isMainModule:
           verbosity = Verbosity.dbg
           bmTearDownCalled += 1
 
+        #bmRunX "run 2 minutes", 120.0, rss:
         bmRunX "run 2 seconds", 2.0, rss:
           atomicInc(loops)
           check(bmSetupCalled == 1)
