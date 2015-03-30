@@ -387,16 +387,17 @@ template measureForX(seconds: float, verbosity: Verbosity, runStats: var openarr
 
   var
     durations = newSeq[float](runStats.len)
-    runDuration = round(seconds * gBmCyclesPerSecond)
-    #runDuration = seconds
-    start = getBegCycles()
-    #start = epochTime()
+    runDuration = seconds
+    start = epochTime()
     cur = start
+  # I tried using cycles rather than epoch time but there
+  # was not measureable difference in performance and this
+  # is simpler because we don't have to pass or calculate
+  # the current cycles per second.
   while runDuration > cur - start:
     if not measureX(verbosity, durations, runStats, body):
       if DBG(verbosity): echo "echo measureForX: bad measurement"
-    cur = getEndCycles()
-    #cur = epochTime()
+    cur = epochTime()
 
 proc bmEchoResults(runStat: RunningStat, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
@@ -651,7 +652,6 @@ when isMainModule:
           verbosity = Verbosity.dbg
           bmTearDownCalled += 1
 
-        #bmRunX "run 2 minutes", 120.0, rss:
         bmRunX "run 2 seconds", 2.0, rss:
           atomicInc(loops)
           check(bmSetupCalled == 1)

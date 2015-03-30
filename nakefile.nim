@@ -5,8 +5,8 @@ const
     @["benchmark", "benchmark.html", "nimcache", "t",
       "tests/test", "tests/test.html", "tests/nimcache",
       "examples/bmrun", "examples/bmloop", "examples/nimcache"]
-  buildFlags = "-d:release --verbosity:0 --hints:off --warnings:off --threads:on"
-  #buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --parallelBuild:1"
+  buildFlags = "-d:release --verbosity:0 --hints:off --warnings:off --threads:on --embedsrc --lineDir:on"
+  #buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --embedsrc --lineDir:on --parallelBuild:1"
 
   docFlags = ""
   docFiles = @["benchmark.nim"]
