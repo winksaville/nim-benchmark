@@ -1,18 +1,20 @@
-import benchmark, os
+import benchmark
 
+bmSuite "testing atomicInc":
+  var bmsArray: array[0..2, BmStats]
+  var loops = 0
 
-bmSuite "test compiler":
-  var rs: RunningStat
+  bmSetup:
+    # Start with normal verbosity
+    verbosity = Verbosity.normal
+    loops = 0
 
-  bmRun "compile", 0.5, rs:
-    if execShellCMD("nim c --verbosity:0 --hints:off --warnings:off benchmark.nim") != 0:
-      echo "failure"
-      quit 1
+  bmTeardown:
+    # Setting verbosity to dbg outputs the bmsArray
+    verbosity = Verbosity.dbg
 
-  var
-    val: float
-    v1 = 1.3
-    v2 = 2.4
+  bmLoop "loop 10 times", 10, bmsArray:
+    atomicInc(loops)
 
-  bmRun "float multiplication", cyclesToRun(3.0), rs:
-    val = v1 * v2
+  bmTime "run 0.5 seconds", 0.5, bmsArray:
+    atomicInc(loops)

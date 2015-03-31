@@ -4,7 +4,7 @@ const
   buildArtifacts =
     @["benchmark", "benchmark.html", "nimcache", "t",
       "tests/test", "tests/test.html", "tests/nimcache",
-      "examples/bmrun", "examples/bmloop", "examples/nimcache"]
+      "examples/bmrun", "examples/nimcache"]
   buildFlags = "-d:release --verbosity:0 --hints:off --warnings:off --threads:on --embedsrc --lineDir:on"
   #buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --embedsrc --lineDir:on --parallelBuild:1"
 
