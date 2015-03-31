@@ -1,6 +1,8 @@
 ## Benchmark will measure the time it takes for some arbitrary
 ## code to excute in the body of templates bmLoop or bmTime.
-## The templates take an array of BmStats and N runs of the body
+## The templates bmLoop takes name, loopCount, var BmStats/array BmStats,
+## and the body to run.The templates come in two variants one takes a single BmStats
+## take an array of BmStats and N runs of the body
 ## will be sorted in ascending order by the time the run took.
 ## This produces a set of bins for analyzing the run with the first
 ## element of the array contains statistics for the fastest runs
@@ -17,11 +19,11 @@
 ## cyclesPerSecond will return the approximate frequency.
 ##
 ## Example use with the following code in t1.nim:
-##
+##::
 ## $ cat examples/bmrun.nim
 ## import benchmark
 ## 
-## bmSuite "testing atomicInc":
+## bmSuite "testing atomicInc", 1.0:
 ##   var bmsArray: array[0..2, BmStats]
 ##   var loops = 0
 ## 
@@ -180,11 +182,11 @@ proc push*(s: var BmStats, x: int) =
   ## and the other push operation is called.
   push(s, toFloat(x))
   
-proc variance*(s: BmStats): float = 
+proc variance*(s: BmStats): float =
   ## computes the current variance of `s`
   if s.n > 1: result = s.newS / (toFloat(s.n - 1))
 
-proc standardDeviation*(s: BmStats): float = 
+proc standardDeviation*(s: BmStats): float =
   ## computes the current standard deviation of `s`
   result = sqrt(variance(s))
 
@@ -389,7 +391,7 @@ template measureLoops(loopCount: int, verbosity: Verbosity, bmsArray: var openar
 
   for i in 0..loopCount-1:
     if not measure(verbosity, durations, bmsArray, body):
-      if DBG(verbosity): echo "echo measureSecs: bad measurement"
+      if DBG(verbosity): echo "echo measureLoops: bad measurement"
 
 proc secondsToString*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
@@ -422,7 +424,13 @@ proc bmEchoResults(bms: BmStats, verbosity: Verbosity,
   #if DBG(verbosity): s = s & " bmStats=" & $bms
   echo s
 
-template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
+proc bmWarmupCpu*(seconds: float) =
+  var
+    bmsa: array[0..0, BmStats]
+    v: int
+  measureSecs(seconds, Verbosity.none, bmsa, inc(v))
+
+template bmSuite*(nameSuite: string, warmupSeconds: float, bmSuiteBody: stmt): stmt {.immediate.} =
   ## Begin a benchmark suite. May contian one or more of bmSetup, bmTeardown,
   ## bmTime, bmLoop.  which are detailed below:
   ##::
@@ -444,10 +452,16 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmTime or bmLoop
   ##::
   ##  template bmLoop*(nameRun: string, loopCount: int,
+  ##                   bms: var BmStats,
+  ##                   runBody: stmt): stmt {.dirty.} =
+  ##  template bmLoop*(nameRun: string, loopCount: int,
   ##                   bmsArray: var openarray[BmStats],
   ##                   runBody: stmt): stmt {.dirty.} =
   ##    ## Run the runBody loopCount * bmsArray.len times.
   ##::
+  ##  template bmTime*(nameRun: string, seconds: float,
+  ##                   bms: var BmStats,
+  ##                   runBody: stmt): stmt {.dirty.} =
   ##  template bmTime*(nameRun: string, seconds: float,
   ##                   bmsArray: var openarray[BmStats],
   ##                   runBody: stmt): stmt {.dirty.} =
@@ -459,6 +473,8 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
     var
       verbosity {.inject.} = Verbosity.normal
       cyclesPerSec {.inject.} = cyclesPerSecond()
+
+    bmWarmupCpu(warmupSeconds)
 
     # The implementation of setup/teardown when invoked by bmTime
     template bmSetupImpl*: stmt = discard
@@ -495,9 +511,10 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmLoop*(nameRun: string, loopCount: int, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
-      var bmsArray: array[0..0, BmStats]
-      bmLoop(nameRun, loopCount, bmsArray, runBody)
-      bms = bmsArray[0]
+      block:
+        var bmsArray: array[0..0, BmStats]
+        bmLoop(nameRun, loopCount, bmsArray, runBody)
+        bms = bmsArray[0]
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmTime*(nameRun: string, seconds: float,
@@ -523,9 +540,10 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmTime*(nameRun: string, seconds: float, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
-      var bmsArray: array[0..0, BmStats]
-      bmTime(nameRun, seconds, bmsArray, runBody)
-      bms = bmsArray[0]
+      block:
+        var bmsArray: array[0..0, BmStats]
+        bmTime(nameRun, seconds, bmsArray, runBody)
+        bms = bmsArray[0]
 
     # Instanitate the suite body
     bmSuiteBody
@@ -582,7 +600,7 @@ when isMainModule:
     ## Some simple tests
     test "bmSuite":
 
-      bmSuite "bmLoop":
+      bmSuite "bmLoop", 1.0:
         var
           bms: BmStats
           loops = 0
@@ -607,7 +625,18 @@ when isMainModule:
         check(bms.n == 1)
         check(bms.min >= 0.0)
 
-      bmSuite "bmTime":
+        bmLoop "loop 2", 2, bms:
+          check(bmSetupCalled == 2)
+          check(bmTearDownCalled == 1)
+          loops += 1
+        checkpoint("loop 2 bms=" & $bms)
+        check(loops == 2)
+        check(bmSetupCalled == 2)
+        check(bmTearDownCalled == 2)
+        check(bms.n == 2)
+        check(bms.min >= 0.0)
+
+      bmSuite "bmTime", 0.0:
         var
           bms: BmStats
           loops = 0
@@ -633,7 +662,7 @@ when isMainModule:
         check(bms.n > 1)
         check(bms.min >= 0.0)
 
-      bmSuite "bmTime":
+      bmSuite "bmTime", 0:
         var
           bmStats: BmStats
           loops = 0
