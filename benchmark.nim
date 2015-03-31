@@ -391,12 +391,34 @@ template measureLoops(loopCount: int, verbosity: Verbosity, bmsArray: var openar
     if not measure(verbosity, durations, bmsArray, body):
       if DBG(verbosity): echo "echo measureSecs: bad measurement"
 
+proc secondsToString*(seconds: float): string =
+  ## Convert seconds to string with suffix if possible
+  var
+    suffixArray = @["s", "ms", "us", "ns", "ps"]
+    adjSeconds = seconds
+
+  for suffix in suffixArray:
+    if adjSeconds >= 1.0:
+      return formatFloat(adjSeconds, ffDecimal, 3) & suffix
+    adjSeconds *= 1.0e3
+  result = formatFloat(seconds, ffScientific, 4)
+
+proc cyclesToString*(cycles: float): string =
+  ## Convert cycles to an interger string if <= 1,000,000
+  if cycles >= 0.0 and cycles <= 1_000_000.0:
+    result = $round(cycles)
+  else:
+    result = formatFloat(cycles, ffScientific, 6)
+
 proc bmEchoResults(runStat: BmStats, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
   ## code in bmTeardown.
-  var s = "[cycles:" & $runStat.min & " time=" & $(runStat.min / cyclesPerSec) & "] " & suiteName & "." & runName
+  var
+    s = "[cycles:" & cyclesToString(runStat.min) &
+      " time=" & secondsToString(runStat.min / cyclesPerSec) & "] " &
+      suiteName & "." & runName
   if DBG(verbosity): s = s & " runStat=" & $runStat
   echo s
 
@@ -421,12 +443,14 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
   ##  template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmTime or bmLoop
   ##::
-  ##  template bmLoop*(nameRun: string, loopCount: int, bmsArray: var openarray[BmStats],
-  ##                  runBody: stmt): stmt {.dirty.} =
+  ##  template bmLoop*(nameRun: string, loopCount: int,
+  ##                   bmsArray: var openarray[BmStats],
+  ##                   runBody: stmt): stmt {.dirty.} =
   ##    ## Run the runBody loopCount * bmsArray.len times.
   ##::
-  ##  template bmTime*(nameRun: string, seconds: float, bmsArray: var openarray[BmStats],
-  ##                  runBody: stmt): stmt {.dirty.} =
+  ##  template bmTime*(nameRun: string, seconds: float,
+  ##                   bmsArray: var openarray[BmStats],
+  ##                   runBody: stmt): stmt {.dirty.} =
   ##    ## Run the runBody in a loop for seconds and the number of loops will be
   ##    ## modulo the length of bmsArray.
   block:
@@ -449,8 +473,9 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
       template bmTeardownImpl*: stmt = bmTeardownBody
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoop*(nameRun: string, loopCount: int, bmsArray: var openarray[BmStats],
-                    runBody: stmt): stmt {.dirty.} =
+    template bmLoop*(nameRun: string, loopCount: int,
+                     bmsArray: var openarray[BmStats],
+                     runBody: stmt): stmt {.dirty.} =
       ## Run the runBody loopCount * bmsArray.len times.
       block:
         let runName {.inject.} = nameRun
@@ -459,7 +484,9 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
           bmSetupImpl()
           measureLoops(loopCount, verbosity, bmsArray, runBody)
         except:
-          if NRM(verbosity): echo "bmLoop ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
+          if NRM(verbosity):
+            echo "bmLoop ", suiteName, ".", runName,
+              ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
           if NRM(verbosity):
@@ -467,8 +494,9 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
               bmEchoResults(bmsArray[i], verbosity, suiteName, runName, cyclesPerSec)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmTime*(nameRun: string, seconds: float, bmsArray: var openarray[BmStats],
-                    runBody: stmt): stmt {.dirty.} =
+    template bmTime*(nameRun: string, seconds: float,
+                     bmsArray: var openarray[BmStats],
+                     runBody: stmt): stmt {.dirty.} =
       ## Run the runBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray.
       block:
@@ -478,7 +506,9 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
           bmSetupImpl()
           measureSecs(seconds, verbosity, bmsArray, runBody)
         except:
-          if NRM(verbosity): echo "bmTime ", suiteName, ".", runName, ": exception=", getCurrentExceptionMsg()
+          if NRM(verbosity):
+            echo "bmTime ", suiteName, ".", runName,
+              ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
           if NRM(verbosity):

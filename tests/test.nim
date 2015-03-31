@@ -1,16 +1,8 @@
 import benchmark, unittest
 
-const
-  DBG = false
-
-proc work() =
-  var val = 0
-  for i in 0..1_000:
-    val = atomic_add_fetch(addr val, 1, ATOMIC_RELAXED)
-
 suite "bmTests":
 
-  test "bmSuite":
+  test "test bmLoop, bmTime, bmSetup, bmTeardownn":
     var bmSuiteCount = 0
 
     check(bmSuiteCount == 0)
