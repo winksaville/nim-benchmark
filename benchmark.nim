@@ -18,7 +18,6 @@
 ##
 ## Example use with the following code in t1.nim:
 ##
-## ::
 ## $ cat examples/bmrun.nim
 ## import benchmark
 ## 
@@ -46,7 +45,6 @@
 ## that with the faster buckets we see small values of
 ## minC and maxC:
 ##
-##::
 ##  wink@desktop:~/prgs/nim/benchmark$ nim c -r --hints:off examples/bmrun.nim
 ##  [Linking]
 ##  /home/wink/prgs/nim/benchmark/examples/bmrun 
@@ -61,7 +59,6 @@
 ## And then compiling and running in release mode we see
 ## much higher performance and less jitter:
 ##
-##::
 ##  $ nim c -r -d:release --hints:off examples/bmrun.nim
 ##  [Linking]
 ##  /home/wink/prgs/nim/benchmark/examples/bmloop 
@@ -72,7 +69,6 @@
 ##  [cycles:32.0 time=9.702678670773822e-09] testing atomicInc.run 0.5 seconds runStat={n=344361 sum=11182460.0 min=32.0 minC=303729 max=44.0 maxC=6 mean=32.47307331550373}
 ##  [cycles:32.0 time=9.702678670773822e-09] testing atomicInc.run 0.5 seconds runStat={n=344361 sum=11882580.0 min=32.0 minC=132082 max=12548.0 maxC=1 mean=34.50617230174199}
 ##
-##::
 ##    runStat.n    = Number of loops
 ##    runStat.sum  = sum of the time for each loop in cycles
 ##    runStat.min  = The cycles needed for the fastest loop
@@ -95,11 +91,11 @@ const
   DEFAULT_CPS_RUNTIME = 0.25
 
 type
-  Verbosity* {.pure.} = enum
-    none = -1
-    normal = 0
-    dbg = 1
-    dbgv = 2
+  Verbosity* {.pure.} = enum  ## Logging verbosity
+    none = -1                 ## Nothing output
+    normal = 0                ## Normal outout at end of run
+    dbg = 1                   ## Additional debug output
+    dbgv = 2                  ## Copious output
 
 proc NONE*(verbosity: Verbosity): bool {.inline.} =
   ## Return true if Verbosity == Verbosity.none
@@ -119,8 +115,8 @@ proc DBGV*(verbosity: Verbosity): bool {.inline.} =
 
 type
   # RunningStat with and minC and maxC
-  BmStats* = object                     ## statistical benchmark data
-    n*: int                             ## number of pushed data
+  BmStats* = object                     ## Statistical benchmark data
+    n*: int                             ## number of data points
     minC*: int                          ## number of data points == min
     maxC*: int                          ## number of data points == max
     sum*, min*, max*, mean*: float      ## self-explaining
@@ -194,8 +190,11 @@ proc standardDeviation*(s: BmStats): float =
 
 
 type
-  ## The registers returned by cpuid instruction.
-  CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]
+  CpuId* = tuple  ## EAX..EDX registers returned by CPUID instruciton
+    eax: int
+    ebx: int
+    ecx: int
+    edx: int
 
 proc `$`(cpuid: CpuId): string =
   ## Print the CpuId.
