@@ -408,18 +408,18 @@ proc cyclesToString*(cycles: float): string =
   if cycles >= 0.0 and cycles <= 1_000_000.0:
     result = $round(cycles)
   else:
-    result = formatFloat(cycles, ffScientific, 6)
+    result = formatFloat(cycles, ffScientific, 3)
 
-proc bmEchoResults(runStat: BmStats, verbosity: Verbosity,
+proc bmEchoResults(bms: BmStats, verbosity: Verbosity,
                    suiteName: string, runName: string, cyclesPerSec: float) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
   ## code in bmTeardown.
   var
-    s = "[cycles:" & cyclesToString(runStat.min) &
-      " time=" & secondsToString(runStat.min / cyclesPerSec) & "] " &
-      suiteName & "." & runName
-  if DBG(verbosity): s = s & " runStat=" & $runStat
+    s = "[cycles:" & cyclesToString(bms.min) &
+      " time=" & secondsToString(bms.min / cyclesPerSec) & "] " &
+      suiteName & "." & runName & " bmStats=" & $bms
+  #if DBG(verbosity): s = s & " bmStats=" & $bms
   echo s
 
 template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
@@ -494,6 +494,12 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
               bmEchoResults(bmsArray[i], verbosity, suiteName, runName, cyclesPerSec)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
+    template bmLoop*(nameRun: string, loopCount: int, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
+      var bmsArray: array[0..0, BmStats]
+      bmLoop(nameRun, loopCount, bmsArray, runBody)
+      bms = bmsArray[0]
+
+    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmTime*(nameRun: string, seconds: float,
                      bmsArray: var openarray[BmStats],
                      runBody: stmt): stmt {.dirty.} =
@@ -514,6 +520,12 @@ template bmSuite*(nameSuite: string, bmSuiteBody: stmt): stmt {.immediate.} =
           if NRM(verbosity):
             for i in 0..bmsArray.len-1:
               bmEchoResults(bmsArray[i], verbosity, suiteName, runName, cyclesPerSec)
+
+    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
+    template bmTime*(nameRun: string, seconds: float, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
+      var bmsArray: array[0..0, BmStats]
+      bmTime(nameRun, seconds, bmsArray, runBody)
+      bms = bmsArray[0]
 
     # Instanitate the suite body
     bmSuiteBody
@@ -572,7 +584,7 @@ when isMainModule:
 
       bmSuite "bmLoop":
         var
-          bmsArray: array[0..0, BmStats]
+          bms: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -584,20 +596,20 @@ when isMainModule:
         bmTearDown:
           bmTearDownCalled += 1
 
-        bmLoop "loop 1", 1, bmsArray:
+        bmLoop "loop 1", 1, bms:
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
           loops += 1
-        checkpoint("loop 1 bms=" & $bmsArray[0])
+        checkpoint("loop 1 bms=" & $bms)
         check(loops == 1)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
-        check(bmsArray[0].n == 1)
-        check(bmsArray[0].min >= 0.0)
+        check(bms.n == 1)
+        check(bms.min >= 0.0)
 
       bmSuite "bmTime":
         var
-          bmsArray: array[0..0, BmStats]
+          bms: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -609,21 +621,21 @@ when isMainModule:
         bmTearDown:
           bmTearDownCalled += 1
 
-        bmTime "run 0.001 seconds ", 0.001, bmsArray:
+        bmTime "run 0.001 seconds ", 0.001, bms:
           loops += 1
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
 
-        checkpoint("run 0.001 seconds bms=" & $bmsArray[0])
+        checkpoint("run 0.001 seconds bms=" & $bms)
         check(loops > 100)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
-        check(bmsArray[0].n > 1)
-        check(bmsArray[0].min >= 0.0)
+        check(bms.n > 1)
+        check(bms.min >= 0.0)
 
       bmSuite "bmTime":
         var
-          rss: array[0..10, BmStats]
+          bmStats: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -636,7 +648,7 @@ when isMainModule:
           verbosity = Verbosity.dbg
           bmTearDownCalled += 1
 
-        bmTime "run 2 seconds", 2.0, rss:
+        bmTime "run 2 seconds", 2.0, bmStats:
           atomicInc(loops)
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
@@ -644,4 +656,3 @@ when isMainModule:
         check(loops > 100)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
-
