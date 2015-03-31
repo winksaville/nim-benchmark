@@ -344,7 +344,6 @@ template measure(verbosity: Verbosity, durations: var openarray[float], bmsArray
 
   discard initializeCycles(tscAuxInitial)
   for i in 0..bmsArray.len-1:
-    # TODO: Make the body of this loop a template
     bc = getBegCycles()
     body
     ec = getEndCycles(tscAuxNow)
@@ -364,7 +363,6 @@ template measure(verbosity: Verbosity, durations: var openarray[float], bmsArray
 template measureSecs(seconds: float, verbosity: Verbosity, bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  ## TODO: errors ????? BmStats.n = -1 and BmStats.min == -1 then an error occured.
   if DBG(verbosity): echo "measureSecs: seconds=", seconds
 
   var
@@ -384,7 +382,6 @@ template measureSecs(seconds: float, verbosity: Verbosity, bmsArray: var openarr
 template measureLoops(loopCount: int, verbosity: Verbosity, bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  ## TODO: errors ????? BmStats.n = -1 and BmStats.min == -1 then an error occured.
   if DBG(verbosity): echo "measureLoops: loopCount=", loopCount
 
   var
