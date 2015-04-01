@@ -130,7 +130,7 @@
 ## increment.atomicInc: bms[3]={min=160cy mean=185cy minC=1 n=115241}
 ## increment.atomicInc: bms[4]={min=170cy mean=194cy minC=254 n=115241}
 
-## Let make one final change lets make this a release build. What
+## Lets make one final change lets make this a release build. What
 ## a huge difference the cycles is now 16cy for inc and 26cy for
 ## atomicInc and we see that  minC is not a miniscule number
 ## so we have a very high confidence that in a release build even
