@@ -149,8 +149,6 @@
 ## CC: stdlib_posix
 ## [Linking]
 ## $ exmpl/bmrun2
-## bash: exmpl/bmrun2: No such file or directory
-## $ exmpl/bminc2
 ## increment.inc: bms[0]={min=16cy mean=18cy minC=314358 n=390304}
 ## increment.inc: bms[1]={min=16cy mean=20cy minC=256916 n=390304}
 ## increment.inc: bms[2]={min=16cy mean=22cy minC=151829 n=390304}
