@@ -4,13 +4,13 @@ const
   buildArtifacts =
     @["benchmark", "benchmark.html", "nimcache", "t",
       "tests/test", "tests/test.html", "tests/nimcache",
-      "exmpl/bmrun", "exmpl/bmnimc", "exmpl/bminc", "exmpl/nimcache"]
+      "exmpl/bmnimc", "exmpl/bminc", "exmpl/bminc2", "exmpl/nimcache"]
   #buildFlags = "-d:release --verbosity:1 --hints:off --warnings:off --threads:on --embedsrc --lineDir:on"
   buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --embedsrc --lineDir:on --parallelBuild:1"
 
   docFlags = ""
   docFiles = @["benchmark.nim"]
-  exampleFiles = @["exmpl/bminc.nim", "exmpl/bmrun.nim", "exmpl/bmnimc.nim"]
+  exampleFiles = @["exmpl/bminc.nim", "exmpl/bminc2.nim", "exmpl/bmnimc.nim"]
 
 task defaultTask, "Clean, Compile and run the tests":
   runTask "clean"

@@ -1,8 +1,8 @@
 import benchmark
 
-bmSuite "increment", 0.0:
+bmSuite "increment", 1.0:
   var
-    bms: BmStats
+    bms: array[0..4, BmStats]
     loops = 0
 
   bmTime "inc", 0.5, bms:
