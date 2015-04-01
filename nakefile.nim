@@ -4,13 +4,13 @@ const
   buildArtifacts =
     @["benchmark", "benchmark.html", "nimcache", "t",
       "tests/test", "tests/test.html", "tests/nimcache",
-      "examples/bmrun", "examples/nimcache"]
+      "exmpl/bmrun", "exmpl/bmnimc", "exmpl/bminc", "exmpl/nimcache"]
   #buildFlags = "-d:release --verbosity:1 --hints:off --warnings:off --threads:on --embedsrc --lineDir:on"
   buildFlags = "-d:release --verbosity:3 --hints:off --warnings:on --threads:on --embedsrc --lineDir:on --parallelBuild:1"
 
   docFlags = ""
   docFiles = @["benchmark.nim"]
-  exampleFiles = @["examples/bminc.nim", "examples/bmrun.nim"]
+  exampleFiles = @["exmpl/bminc.nim", "exmpl/bmrun.nim", "exmpl/bmnimc.nim"]
 
 task defaultTask, "Clean, Compile and run the tests":
   runTask "clean"
@@ -28,7 +28,7 @@ task "docs", "Buiild the documents":
       echo "error generating docs"
       quit 1
 
-task "examples", "Build and run the examples":
+task "exmpl", "Build and run the exmpl":
   for file in exampleFiles:
     if not shell(nimExe, "c -r",  buildFlags, file):
       echo "error compiling"
