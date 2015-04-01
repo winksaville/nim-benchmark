@@ -6,7 +6,7 @@ suite "bmTests":
     var bmSuiteCount = 0
 
     check(bmSuiteCount == 0)
-    bmSuite "bmLoop":
+    bmSuite "bmLoop", 0.0:
       bmSuiteCount += 1
 
       var
@@ -49,7 +49,7 @@ suite "bmTests":
 
     check(bmSuiteCount == 1)
 
-    bmSuite "bmTime":
+    bmSuite "bmTime", 0:
       bmSuiteCount += 1
 
       var

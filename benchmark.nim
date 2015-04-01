@@ -89,6 +89,10 @@
 import algorithm, math, times, os, posix, strutils
 export math, algorithm
 
+# forward decls
+proc secToStr*(seconds: float): string
+proc cyclesToSecToStr*(cycles: float, cps: float): string
+
 const
   DEFAULT_CPS_RUNTIME = 0.25
 
@@ -128,6 +132,17 @@ proc `$`*(s: BmStats): string =
   ## Print the BmStats.
   "{n=" & $s.n & " sum=" & $s.sum & " min=" & $s.min & " minC=" & $s.minC &
     " max=" & $s.max & " maxC=" & $s.maxC & " mean=" & $s.mean & "}"
+
+proc toStr*(s: BmStats, cps: float): string =
+  ## Print the BmStats using cycles per second.
+  "{n=" & $s.n &
+    " min=" & cyclesToSecToStr(s.min, cps) &
+    " minC=" & $s.minC &
+    " max=" & cyclesToSecToStr(s.max, cps) &
+    " maxC=" & $s.maxC &
+    " mean=" & cyclesToSecToStr(s.mean, cps) &
+    " sum=" & cyclesToSecToStr(s.sum, cps) &
+    "}"
 
 proc zero*(bms: var BmStats) =
     bms.n = 0
@@ -299,33 +314,33 @@ proc initializeCycles(tscAux: var int): int {.inline.} =
   discard getBegCycles()
   result = cast[int](getEndCycles(tscAux))
 
-proc cps(seconds: float): float =
-  ## Determine the approximate cycles per second of the TSC.
-  ## The seconds parameter is the length of the meausrement.
-  ## return a value < 0.0 if unsuccessful. This happens if the
-  ## code detects if the thread migrated cpu's.
-  const
-    DBG = false
-
-  var
-    tscAuxInitial: int
-    tscAuxNow: int
-    start: int
-    ec: int
-    endTime: float
-
-  endTime = epochTime() + seconds
-  start = initializeCycles(tscAuxInitial)
-  while epochTime() <= endTime:
-    ec = cast[int](getEndCycles(tscAuxNow))
-    if tscAuxInitial != tscAuxNow:
-      when DBG:
-        echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4),
-          " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
-      return -1.0
-  result = (ec - start).toFloat() / seconds
-
 proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
+  proc cps(seconds: float): float =
+    ## Determine the approximate cycles per second of the TSC.
+    ## The seconds parameter is the length of the meausrement.
+    ## return a value < 0.0 if unsuccessful. This happens if the
+    ## code detects if the thread migrated cpu's.
+    const
+      DBG = false
+
+    var
+      tscAuxInitial: int
+      tscAuxNow: int
+      start: int
+      ec: int
+      endTime: float
+
+    endTime = epochTime() + seconds
+    start = initializeCycles(tscAuxInitial)
+    while epochTime() <= endTime:
+      ec = cast[int](getEndCycles(tscAuxNow))
+      if tscAuxInitial != tscAuxNow:
+        when DBG:
+          echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4),
+            " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
+        return -1.0
+    result = (ec - start).toFloat() / seconds
+
   ## Call cps several times to maximize the chance
   ## of getting a good value
   for i in 0..2:
@@ -393,7 +408,7 @@ template measureLoops(loopCount: int, verbosity: Verbosity, bmsArray: var openar
     if not measure(verbosity, durations, bmsArray, body):
       if DBG(verbosity): echo "echo measureLoops: bad measurement"
 
-proc secondsToString*(seconds: float): string =
+proc secToStr*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
   var
     suffixArray = @["s", "ms", "us", "ns", "ps"]
@@ -405,23 +420,24 @@ proc secondsToString*(seconds: float): string =
     adjSeconds *= 1.0e3
   result = formatFloat(seconds, ffScientific, 4)
 
-proc cyclesToString*(cycles: float): string =
-  ## Convert cycles to an interger string if <= 1,000,000
-  if cycles >= 0.0 and cycles <= 1_000_000.0:
-    result = $round(cycles)
-  else:
-    result = formatFloat(cycles, ffScientific, 3)
+proc cyclesToSecToStr*(cycles: float, cps: float): string =
+  ## Convert cycles to seconds and then to string
+  result = secToStr(cycles / cps)
 
 proc bmEchoResults(bms: BmStats, verbosity: Verbosity,
-                   suiteName: string, runName: string, cyclesPerSec: float) =
+                   suiteName: string, runName: string, cps: float) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
   ## code in bmTeardown.
-  var
-    s = "[cycles:" & cyclesToString(bms.min) &
-      " time=" & secondsToString(bms.min / cyclesPerSec) & "] " &
-      suiteName & "." & runName & " bmStats=" & $bms
-  #if DBG(verbosity): s = s & " bmStats=" & $bms
+  var s = suiteName & "." & runName
+  if NRM(verbosity):
+    s &= " bms={" &
+              " min=" & secToStr(bms.min / cps) &
+              " mean=" & secToStr(bms.mean / cps) &
+              " minC=" & $bms.minC &
+              " n=" & $bms.n & "}"
+  else:
+    s &= " bms=" & toStr(bms, cps)
   echo s
 
 proc bmWarmupCpu*(seconds: float) =
