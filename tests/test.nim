@@ -40,7 +40,7 @@ suite "bmTests":
         check(bmSetupCalled == 2)
         check(bmTearDownCalled == 1)
 
-      checkpoint("loop 1 bms=" & $bms)
+      checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops == 1)
       check(bmSetupCalled == 2)
       check(bmTearDownCalled == 2)
@@ -70,7 +70,7 @@ suite "bmTests":
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 0)
 
-      checkpoint("run 0.001 seconds bms=" & $bms)
+      checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops > 100)
       check(bmSetupCalled == 1)
       check(bmTearDownCalled == 1)
@@ -88,7 +88,7 @@ suite "bmTests":
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
 
-      checkpoint("loops 2 bms=" & $bms)
+      checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops == 2)
       check(bmSetupCalled == 1)
       check(bmTearDownCalled == 1)

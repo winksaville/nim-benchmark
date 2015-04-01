@@ -9,4 +9,6 @@ nimcache/
 /nakefile
 /tests/test
 /src/cmdargsopt
-/examples/bmrun
+/exmpl/bmrun
+/exmpl/bminc
+/exmpl/bmnimc

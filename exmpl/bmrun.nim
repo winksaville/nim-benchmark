@@ -1,6 +1,6 @@
 import benchmark
 
-bmSuite "testing atomicInc", 1.0:
+bmSuite "testing", 1.0:
   var
     bmsArray: array[0..5, BmStats]
     loops = 0

@@ -29,12 +29,12 @@
 ## 
 ##   bmSetup:
 ##     # Start with normal verbosity
-##     verbosity = Verbosity.normal
+##     bmso.verbosity = Verbosity.normal
 ##     loops = 0
 ## 
 ##   bmTeardown:
 ##     # Setting verbosity to dbg outputs the bmsArray
-##     verbosity = Verbosity.dbg
+##     bmso.verbosity = Verbosity.dbg
 ##    
 ##   bmLoop "loop 10 times", 10, bmsArray:
 ##     atomicInc(loops)
@@ -90,11 +90,12 @@ import algorithm, math, times, os, posix, strutils
 export math, algorithm
 
 # forward decls
-proc secToStr*(seconds: float): string
-proc cyclesToSecToStr*(cycles: float, cps: float): string
+#proc secToStr*(seconds: float): string
+#proc cyclesToStr*(cycles: float, cps: float): string
 
 const
   DEFAULT_CPS_RUNTIME = 0.25
+  DEFAULT_CYCLES_TO_SEC_THRESHOLD = 1_000.0
 
 type
   Verbosity* {.pure.} = enum  ## Logging verbosity
@@ -132,17 +133,6 @@ proc `$`*(s: BmStats): string =
   ## Print the BmStats.
   "{n=" & $s.n & " sum=" & $s.sum & " min=" & $s.min & " minC=" & $s.minC &
     " max=" & $s.max & " maxC=" & $s.maxC & " mean=" & $s.mean & "}"
-
-proc toStr*(s: BmStats, cps: float): string =
-  ## Print the BmStats using cycles per second.
-  "{n=" & $s.n &
-    " min=" & cyclesToSecToStr(s.min, cps) &
-    " minC=" & $s.minC &
-    " max=" & cyclesToSecToStr(s.max, cps) &
-    " maxC=" & $s.maxC &
-    " mean=" & cyclesToSecToStr(s.mean, cps) &
-    " sum=" & cyclesToSecToStr(s.sum, cps) &
-    "}"
 
 proc zero*(bms: var BmStats) =
     bms.n = 0
@@ -192,7 +182,7 @@ proc push*(s: var BmStats, x: float) =
     s.oldS = s.newS
   s.sum = s.sum + x
   
-proc push*(s: var BmStats, x: int) = 
+proc push*(s: var BmStats, x: int) =
   ## pushes a value `x` for processing. `x` is simply converted to ``float``
   ## and the other push operation is called.
   push(s, toFloat(x))
@@ -349,7 +339,17 @@ proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
       return result
   result = -1.0
 
-template measure(verbosity: Verbosity, durations: var openarray[float], bmsArray: var openarray[BmStats], body: stmt): bool =
+type
+  BmSuiteObj* = object ## Object associated with a bmSuite
+    suiteName: string ## Name of the suite
+    runName: string ## Name of the current run
+    fullName: string ## Suite and Runame concatonated
+    cyclesPerSec: float ## Frequency of cycle counter
+    cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
+    verbosity: Verbosity ## Verbosity of output
+
+template measure(durations: var openarray[float], verbosity: Verbosity,
+    bmsArray: var openarray[BmStats], body: stmt): bool =
   var
     ok: bool = true
     tscAuxInitial: int
@@ -365,10 +365,14 @@ template measure(verbosity: Verbosity, durations: var openarray[float], bmsArray
     body
     ec = getEndCycles(tscAuxNow)
     durations[i] = float(ec - bc)
-    if DBGV(verbosity): echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=", float(bc)
+    if DBGV(verbosity):
+      echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
+        float(bc)
     if tscAuxInitial != tscAuxNow:
       # Switched CPU we can't trust rdtsc
-      if NRM(verbosity): echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
+      if NRM(verbosity):
+        echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x",
+          toHex(tscAuxInitial, 4)
       ok = false;
       break
   if ok:
@@ -377,7 +381,8 @@ template measure(verbosity: Verbosity, durations: var openarray[float], bmsArray
       bmsArray[i].push(durations[i])
   ok
 
-template measureSecs(seconds: float, verbosity: Verbosity, bmsArray: var openarray[BmStats], body: stmt) =
+template measureSecs(seconds: float, verbosity: Verbosity,
+    bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
   if DBG(verbosity): echo "measureSecs: seconds=", seconds
@@ -392,21 +397,22 @@ template measureSecs(seconds: float, verbosity: Verbosity, bmsArray: var openarr
   # is simpler because we don't have to pass or calculate
   # the current cycles per second.
   while runDuration > cur - start:
-    if not measure(verbosity, durations, bmsArray, body):
+    if not measure(durations, verbosity, bmsArray, body):
       if DBG(verbosity): echo "echo measureSecs: bad measurement"
     cur = epochTime()
 
-template measureLoops(loopCount: int, verbosity: Verbosity, bmsArray: var openarray[BmStats], body: stmt) =
+template measureLoops(bmso: BmSuiteObj, loopCount: int,
+    bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  if DBG(verbosity): echo "measureLoops: loopCount=", loopCount
+  if DBG(bmso.verbosity): echo "measureLoops: loopCount=", loopCount
 
   var
     durations = newSeq[float](bmsArray.len)
 
   for i in 0..loopCount-1:
-    if not measure(verbosity, durations, bmsArray, body):
-      if DBG(verbosity): echo "echo measureLoops: bad measurement"
+    if not measure(durations, bmso.verbosity, bmsArray, body):
+      if DBG(bmso.verbosity): echo "echo measureLoops: bad measurement"
 
 proc secToStr*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
@@ -420,46 +426,59 @@ proc secToStr*(seconds: float): string =
     adjSeconds *= 1.0e3
   result = formatFloat(seconds, ffScientific, 4)
 
-proc cyclesToSecToStr*(cycles: float, cps: float): string =
-  ## Convert cycles to seconds and then to string
-  result = secToStr(cycles / cps)
+proc cyclesToStr*(bmso: BmSuiteObj, cycles: float): string =
+  ## Convert cycles to string either as cycles or time
+  ## depending upon bmso.cyclesToSecThreshold
+  if cycles >=  bmso.cyclesToSecThreshold:
+    result = secToStr(cycles / bmso.cyclesPerSec)
+  else:
+    result = $round(cycles) & "cy"
 
-proc bmEchoResults(bms: BmStats, verbosity: Verbosity,
-                   suiteName: string, runName: string, cps: float) =
+proc bmStatsToStr*(bmso: BmSuiteObj, s: BmStats): string =
+  ## Print the BmStats using cycles per second.
+  "{n=" & $s.n &
+    " min=" & cyclesToStr(bmso, s.min) &
+    " minC=" & $s.minC &
+    " max=" & cyclesToStr(bmso, s.max) &
+    " maxC=" & $s.maxC &
+    " mean=" & cyclesToStr(bmso, s.mean) &
+    " sum=" & cyclesToStr(bmso, s.sum) &
+    "}"
+
+proc bmEchoResults(bmso: BmSuiteObj, bmsArray: openarray[BmStats]) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
   ## code in bmTeardown.
-  var s = suiteName & "." & runName
-  if NRM(verbosity):
-    s &= " bms={" &
-              " min=" & secToStr(bms.min / cps) &
-              " mean=" & secToStr(bms.mean / cps) &
-              " minC=" & $bms.minC &
-              " n=" & $bms.n & "}"
-  else:
-    s &= " bms=" & toStr(bms, cps)
-  echo s
+  var
+    bmsArrayIdxStr = ""
+    idx = 0
+  for bms in bmsArray:
+    var s = bmso.fullName & ":"
+    if bmsArray.len > 1:
+      bmsArrayIdxStr = "[" & $idx & "]"
+    if NRM(bmso.verbosity):
+      s &= " bms" & bmsArrayIdxStr & "=" &
+          "{min=" & cyclesToStr(bmso, bms.min) &
+          " mean=" & cyclesToStr(bmso, bms.mean) &
+          " minC=" & $bms.minC &
+          " n=" & $bms.n & "}"
+    else:
+      s &= " bms=" & bmStatsToStr(bmso, bms)
+    echo s
+    idx += 1
 
 proc bmWarmupCpu*(seconds: float) =
   var
     bmsa: array[0..0, BmStats]
-    v: int
+    v: Verbosity
   measureSecs(seconds, Verbosity.none, bmsa, inc(v))
 
 template bmSuite*(nameSuite: string, warmupSeconds: float, bmSuiteBody: stmt): stmt {.immediate.} =
   ## Begin a benchmark suite. May contian one or more of bmSetup, bmTeardown,
   ## bmTime, bmLoop.  which are detailed below:
   ##::
-  ##  let suiteName: string
-  ##  ## The name of the suite
-  ##::
-  ##  let runName: string
-  ##  ## The name of the bmLoop or bmTime run
-  ##::
-  ##  var verbosity: Verbosity
-  ##  ## The current verbosity level
-  ##::
-  ##  var cyclesPerSec: float
+  ##  var bmso: BmSuiteObj
+  ##  ## Suite object
   ##::
   ##  template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
   ##    ## This is executed prior to each bmTime or bmLoop
@@ -484,11 +503,12 @@ template bmSuite*(nameSuite: string, warmupSeconds: float, bmSuiteBody: stmt): s
   ##    ## Run the runBody in a loop for seconds and the number of loops will be
   ##    ## modulo the length of bmsArray.
   block:
-    let
-      suiteName {.inject.} = nameSuite
     var
-      verbosity {.inject.} = Verbosity.normal
-      cyclesPerSec {.inject.} = cyclesPerSecond()
+      bmso {.inject.} : BmSuiteObj
+
+    bmso.suiteName = nameSuite
+    bmso.cyclesPerSec = cyclesPerSecond()
+    bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
 
     bmWarmupCpu(warmupSeconds)
 
@@ -510,23 +530,23 @@ template bmSuite*(nameSuite: string, warmupSeconds: float, bmSuiteBody: stmt): s
                      runBody: stmt): stmt {.dirty.} =
       ## Run the runBody loopCount * bmsArray.len times.
       block:
-        let runName {.inject.} = nameRun
         try:
+          bmso.runName = nameRun
+          bmso.fullName = bmso.suiteName & "." & bmso.runName
           bmsArray.zero()
           bmSetupImpl()
-          measureLoops(loopCount, verbosity, bmsArray, runBody)
+          measureLoops(bmso, loopCount, bmsArray, runBody)
         except:
-          if NRM(verbosity):
-            echo "bmLoop ", suiteName, ".", runName,
+          if NRM(bmso.verbosity):
+            echo "bmLoop ", bmso.fullName &
               ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
-          if NRM(verbosity):
-            for i in 0..bmsArray.len-1:
-              bmEchoResults(bmsArray[i], verbosity, suiteName, runName, cyclesPerSec)
+          bmEchoResults(bmso, bmsArray)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoop*(nameRun: string, loopCount: int, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
+    template bmLoop*(nameRun: string, loopCount: int,
+        bms: var BmStats, runBody: stmt): stmt {.dirty.} =
       block:
         var bmsArray: array[0..0, BmStats]
         bmLoop(nameRun, loopCount, bmsArray, runBody)
@@ -534,28 +554,28 @@ template bmSuite*(nameSuite: string, warmupSeconds: float, bmSuiteBody: stmt): s
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
     template bmTime*(nameRun: string, seconds: float,
-                     bmsArray: var openarray[BmStats],
-                     runBody: stmt): stmt {.dirty.} =
+        bmsArray: var openarray[BmStats], runBody: stmt): stmt {.dirty.} =
       ## Run the runBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray.
       block:
-        var runName {.inject.} = nameRun
         try:
+          bmso.runName = nameRun
+          bmso.fullName = bmso.suiteName & "." & bmso.runName
           bmsArray.zero()
           bmSetupImpl()
-          measureSecs(seconds, verbosity, bmsArray, runBody)
+          measureSecs(seconds, bmso.verbosity, bmsArray, runBody)
         except:
-          if NRM(verbosity):
-            echo "bmTime ", suiteName, ".", runName,
+          if NRM(bmso.verbosity):
+            echo "bmTime ", bmso.fullName,
               ": exception=", getCurrentExceptionMsg()
         finally:
           bmTeardownImpl()
-          if NRM(verbosity):
-            for i in 0..bmsArray.len-1:
-              bmEchoResults(bmsArray[i], verbosity, suiteName, runName, cyclesPerSec)
+          if NRM(bmso.verbosity):
+            bmEchoResults(bmso, bmsArray)
 
     # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmTime*(nameRun: string, seconds: float, bms: var BmStats, runBody: stmt): stmt {.dirty.} =
+    template bmTime*(nameRun: string, seconds: float, bms: var BmStats,
+        runBody: stmt): stmt {.dirty.} =
       block:
         var bmsArray: array[0..0, BmStats]
         bmTime(nameRun, seconds, bmsArray, runBody)
@@ -582,7 +602,7 @@ when isMainModule:
       ##     Intel: ebx=0x756E_6547 ecx=0x6C65_746E edx=0x4965_6E69
       ##     Amd:   ebx=0x6874_7541 ecx=0x444D_4163 edx=0x6974_6E65
       var id = cpuid(0)
-      checkpoint("id=" & $id)
+      checkpoint("cpuid 0x0: id=" & $id)
       check(id.eax <= 0x20)
       check(id.ebx == 0x756E_6547 or id.ebx == 0x6874_7541)
       check(id.ecx == 0x6C65_746E or id.ecx == 0x444D_4163)
@@ -601,7 +621,7 @@ when isMainModule:
         unpackIntToStr(id.ecx, strg)
         unpackIntToStr(id.edx, strg)
 
-      # This isn't much of a check but something.Intel is correct not sure about AMD
+      # This isn't much of a check but something
       check(strg.startsWith("Intel") or (strg.len > 0 and strg.len < 48))
 
     test "cpuid ax, cx param":
@@ -634,7 +654,7 @@ when isMainModule:
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
           loops += 1
-        checkpoint("loop 1 bms=" & $bms)
+        checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops == 1)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
@@ -645,7 +665,7 @@ when isMainModule:
           check(bmSetupCalled == 2)
           check(bmTearDownCalled == 1)
           loops += 1
-        checkpoint("loop 2 bms=" & $bms)
+        checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops == 2)
         check(bmSetupCalled == 2)
         check(bmTearDownCalled == 2)
@@ -666,12 +686,12 @@ when isMainModule:
         bmTearDown:
           bmTearDownCalled += 1
 
-        bmTime "run 0.001 seconds ", 0.001, bms:
+        bmTime "+=1 0.001 secs", 0.001, bms:
           loops += 1
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
 
-        checkpoint("run 0.001 seconds bms=" & $bms)
+        checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops > 100)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
@@ -680,7 +700,7 @@ when isMainModule:
 
       bmSuite "bmTime", 0:
         var
-          bmStats: BmStats
+          bms: BmStats
           loops = 0
           bmSetupCalled = 0
           bmTearDownCalled = 0
@@ -690,14 +710,15 @@ when isMainModule:
           bmSetupCalled += 1
 
         bmTearDown:
-          verbosity = Verbosity.dbg
+          bmso.verbosity = Verbosity.dbg
           bmTearDownCalled += 1
 
-        bmTime "run 2 seconds", 2.0, bmStats:
+        bmTime "atomicInc 2 secs", 2.0, bms:
           atomicInc(loops)
           check(bmSetupCalled == 1)
           check(bmTearDownCalled == 0)
 
+        checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops > 100)
         check(bmSetupCalled == 1)
         check(bmTearDownCalled == 1)
