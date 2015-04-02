@@ -427,8 +427,9 @@ type
     cyclesPerSec: float ## Frequency of cycle counter
     cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
     verbosity: Verbosity ## Verbosity of output
+    overhead: float ## number of cycles overhead to be substracted when measuring
 
-template measure(durations: var openarray[float], verbosity: Verbosity,
+template measure(bmso: BmSuiteObj, durations: var openarray[float],
     bmsArray: var openarray[BmStats], body: stmt): bool =
   var
     ok: bool = true
@@ -437,20 +438,22 @@ template measure(durations: var openarray[float], verbosity: Verbosity,
     bc : int64
     ec : int64
 
-  if DBG(verbosity): echo "measure: loopCount=", bmsArray.len
+  if DBG(bmso.verbosity): echo "measure: loopCount=", bmsArray.len
 
   discard initializeCycles(tscAuxInitial)
   for i in 0..bmsArray.len-1:
     bc = getBegCycles()
     body
     ec = getEndCycles(tscAuxNow)
-    durations[i] = float(ec - bc)
-    if DBGV(verbosity):
+    var adjDuration = float(ec - bc) - bmso.overhead
+    if adjDuration < 0: adjDuration = 0
+    durations[i] = adjDuration
+    if DBGV(bmso.verbosity):
       echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
         float(bc)
     if tscAuxInitial != tscAuxNow:
       # Switched CPU we can't trust rdtsc
-      if NRM(verbosity):
+      if NRM(bmso.verbosity):
         echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x",
           toHex(tscAuxInitial, 4)
       ok = false;
@@ -461,11 +464,11 @@ template measure(durations: var openarray[float], verbosity: Verbosity,
       bmsArray[i].push(durations[i])
   ok
 
-template measureSecs(seconds: float, verbosity: Verbosity,
+template measureSecs(bmso: BmSuiteObj, seconds: float,
     bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  if DBG(verbosity): echo "measureSecs: seconds=", seconds
+  if DBG(bmso.verbosity): echo "measureSecs: seconds=", seconds
 
   var
     durations = newSeq[float](bmsArray.len)
@@ -477,8 +480,8 @@ template measureSecs(seconds: float, verbosity: Verbosity,
   # is simpler because we don't have to pass or calculate
   # the current cycles per second.
   while runDuration > cur - start:
-    if not measure(durations, verbosity, bmsArray, body):
-      if DBG(verbosity): echo "echo measureSecs: bad measurement"
+    if not measure(bmso, durations, bmsArray, body):
+      if DBG(bmso.verbosity): echo "echo measureSecs: bad measurement"
     cur = epochTime()
 
 template measureLoops(bmso: BmSuiteObj, loopCount: int,
@@ -491,7 +494,7 @@ template measureLoops(bmso: BmSuiteObj, loopCount: int,
     durations = newSeq[float](bmsArray.len)
 
   for i in 0..loopCount-1:
-    if not measure(durations, bmso.verbosity, bmsArray, body):
+    if not measure(bmso, durations, bmsArray, body):
       if DBG(bmso.verbosity): echo "echo measureLoops: bad measurement"
 
 proc secToStr*(seconds: float): string =
@@ -548,12 +551,12 @@ proc bmEchoResults*(bmso: BmSuiteObj,
     echo s
     idx += 1
 
-proc bmWarmupCpu*(seconds: float) =
+proc bmWarmupCpu*(bmso: BmSuiteObj, seconds: float) =
   ## Warmup the cpu so its running at its highest clock rate
   var
     bmsa: array[0..0, BmStats]
     v: int
-  measureSecs(seconds, Verbosity.none, bmsa, inc(v))
+  measureSecs(bmso, seconds, bmsa, inc(v))
 
 template bmSuite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
@@ -594,12 +597,21 @@ template bmSuite*(nameSuite: string, warmupSeconds: float,
   block:
     var
       bmso {.inject.}: BmSuiteObj
+      bmsa: array[0..0, BmStats]
 
+    # Initialize bmso
     bmso.suiteName = nameSuite
     bmso.cyclesPerSec = cyclesPerSecond()
     bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
+    bmso.overhead = 0
 
-    bmWarmupCpu(warmupSeconds)
+    # Warmup the CPU
+    bmWarmupCpu(bmso, warmupSeconds)
+
+    # Measure overhead
+    measureSecs(bmso, 0.25, bmsa, (discard))
+    bmso.overhead = bmsa[0].min
+    if DBG(bmso.verbosity): echo "bmso.overhead=", bmso.overhead, " bms=", $bmsa[0]
 
     # The implementation of setup/teardown when invoked by bmTime
     template bmSetupImpl*: stmt = discard
@@ -656,7 +668,7 @@ template bmSuite*(nameSuite: string, warmupSeconds: float,
           bmso.fullName = bmso.suiteName & "." & bmso.runName
           bmsArray.zero()
           bmSetupImpl()
-          measureSecs(seconds, bmso.verbosity, bmsArray, timeBody)
+          measureSecs(bmso, seconds, bmsArray, timeBody)
         except:
           if NRM(bmso.verbosity):
             echo "bmTime ", bmso.fullName,
