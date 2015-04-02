@@ -1181,7 +1181,8 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   cyclesPerSec: float         ## Frequency of cycle counter
   cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
   verbosity: Verbosity        ## Verbosity of output
-  overhead: float             ## number of cycles overhead to be substracted when measuring"><wbr />Bm<wbr />Suite<wbr />Obj</a></li>
+  overhead: float             ## Number of cycles overhead to be substracted when measuring
+  hasRDTSCP: bool             ## True if the cpu has RDTSCP instruction"><wbr />Bm<wbr />Suite<wbr />Obj</a></li>
 
   </ul>
 </li>
@@ -1210,8 +1211,8 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
     title="variance*(s: BmStats): float"><wbr />variance</a></li>
   <li><a class="reference" href="#standardDeviation,BmStats"
     title="standardDeviation*(s: BmStats): float"><wbr />standard<wbr />Deviation</a></li>
-  <li><a class="reference" href="#cyclesPerSecond,float"
-    title="cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
+  <li><a class="reference" href="#cyclesPerSecond,BmSuiteObj,float"
+    title="cyclesPerSecond*(bmso: BmSuiteObj; seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
   <li><a class="reference" href="#secToStr,float"
     title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
   <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float"
@@ -1384,7 +1385,8 @@ EAX..EDX registers returned by CPUID instruciton
   <span class="Identifier">cyclesPerSec</span><span class="Other">:</span> <span class="Identifier">float</span>         <span class="Comment">## Frequency of cycle counter</span>
   <span class="Identifier">cyclesToSecThreshold</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
   <span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span>        <span class="Comment">## Verbosity of output</span>
-  <span class="Identifier">overhead</span><span class="Other">:</span> <span class="Identifier">float</span>             <span class="Comment">## number of cycles overhead to be substracted when measuring</span>
+  <span class="Identifier">overhead</span><span class="Other">:</span> <span class="Identifier">float</span>             <span class="Comment">## Number of cycles overhead to be substracted when measuring</span>
+  <span class="Identifier">hasRDTSCP</span><span class="Other">:</span> <span class="Identifier">bool</span>             <span class="Comment">## True if the cpu has RDTSCP instruction</span>
   </pre></dt>
 <dd>
 Object associated with a bmSuite
@@ -1450,7 +1452,7 @@ Computes the current variance of <cite>s</cite>
 Computes the current standard deviation of <cite>s</cite>
 
 </dd>
-<dt id="cyclesPerSecond"><a name="cyclesPerSecond,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesPerSecond</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Other">=</span> <span class="Identifier">DEFAULT_CPS_RUNTIME</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
+<dt id="cyclesPerSecond"><a name="cyclesPerSecond,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesPerSecond</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Other">=</span> <span class="Identifier">DEFAULT_CPS_RUNTIME</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
 <dd>
 Determine the approximate cycles per second of the TSC. The seconds parameter is the length of the meausrement. return a value &lt; 0.0 if unsuccessful. This happens if the code detects if the thread migrated cpu's.
 
@@ -1528,7 +1530,7 @@ template bmTime*(nameRun: string, seconds: float,
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-01 21:05:19 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-02 14:21:59 UTC</small>
       </div>
     </div>
   </div>

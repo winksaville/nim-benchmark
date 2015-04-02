@@ -322,6 +322,20 @@ proc cpuid() {.inline.} =
       : "%eax", "%ebx", "%ecx", "%edx");
   """.}
 
+proc mfence() {.inline.} =
+  ## Full memory barrier serializes all loads and stores.
+  {.emit: """
+    asm volatile (
+      "mfence\n\t"
+      : /* Throw away output */
+      : /* No input */
+      : "memory");
+  """.}
+
+proc hasRDTSCP(): bool =
+  var id = cpuid(0x80000001)
+  result = (id.edx and (1 shl 27)) != 0
+
 proc rdtsc(): int64 {.inline.} =
   ## Execute the rdtsc, read Time Stamp Counter, instruction
   ## returns the 64 bit TSC value.
@@ -344,19 +358,19 @@ proc rdtscp(): int64 {.inline.} =
   """.}
   result = int64(lo) or (int64(hi) shl 32)
 
-proc rdtscp(tscAux: var int): int64 {.inline.} =
+proc rdtscp(tscAux: var int32): int64 {.inline.} =
   ## Execute the rdtscp, read Time Stamp Counter, instruction
   ## returns the 64 bit TSC value and writes to ecx to tscAux value.
   ## The tscAux value is the logical cpu number and can be used
   ## to determine if the thread migrated to a different cpu and
   ## thus the returned value is suspect.
-  var lo, hi, aux: uint32
+  var lo, hi, aux: int32
   {.emit: """
     asm volatile (
       "rdtscp\n\t"
       :"=a"(`lo`), "=d"(`hi`), "=c"(`aux`));
   """.}
-  tscAux = cast[int](aux)
+  tscAux = aux
   result = int64(lo) or (int64(hi) shl 32)
 
 proc getBegCycles(): int64 {.inline.} =
@@ -369,7 +383,12 @@ proc getEndCycles(): int64 {.inline.} =
   result = rdtscp()
   cpuid()
 
-proc getEndCycles(tscAux: var int): int64 {.inline.} =
+proc getEndCyclesNoRdtscp(): int64 {.inline.} =
+  ## Return TSC to be used at the end of the measurement.
+  result = rdtsc()
+  mfence()
+
+proc getEndCycles(tscAux: var int32): int64 {.inline.} =
   ## Return TSC to be used at the end of the measurement
   ## and write ecx to tscAux. The tscAux value is the
   ## logical cpu number and can be used to determine if
@@ -377,49 +396,6 @@ proc getEndCycles(tscAux: var int): int64 {.inline.} =
   ## returned value is suspect.
   result = rdtscp(tscAux)
   cpuid()
-
-proc initializeCycles(tscAux: var int): int {.inline.} =
-  ## Initalize as per the ia32-ia64-benchmark document returning
-  ## the tsc value as exiting and the tscAux in the var param
-  discard getBegCycles()
-  discard getEndCycles()
-  discard getBegCycles()
-  result = cast[int](getEndCycles(tscAux))
-
-proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
-  proc cps(seconds: float): float =
-    ## Determine the approximate cycles per second of the TSC.
-    ## The seconds parameter is the length of the meausrement.
-    ## return a value < 0.0 if unsuccessful. This happens if the
-    ## code detects if the thread migrated cpu's.
-    const
-      DBG = false
-
-    var
-      tscAuxInitial: int
-      tscAuxNow: int
-      start: int
-      ec: int
-      endTime: float
-
-    endTime = epochTime() + seconds
-    start = initializeCycles(tscAuxInitial)
-    while epochTime() <= endTime:
-      ec = cast[int](getEndCycles(tscAuxNow))
-      if tscAuxInitial != tscAuxNow:
-        when DBG:
-          echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4),
-            " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
-        return -1.0
-    result = (ec - start).toFloat() / seconds
-
-  ## Call cps several times to maximize the chance
-  ## of getting a good value
-  for i in 0..2:
-    result = cps(seconds)
-    if result > 0.0:
-      return result
-  result = -1.0
 
 type
   BmSuiteObj* = object ## Object associated with a bmSuite
@@ -429,24 +405,82 @@ type
     cyclesPerSec: float ## Frequency of cycle counter
     cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
     verbosity: Verbosity ## Verbosity of output
-    overhead: float ## number of cycles overhead to be substracted when measuring
+    overhead: float ## Number of cycles overhead to be substracted when measuring
+    hasRDTSCP: bool ## True if the cpu has RDTSCP instruction
+
+proc initializeCycles(bmso: BmSuiteObj, tscAux: var int32): int64 {.inline.} =
+  ## Initalize as per the ia32-ia64-benchmark document returning
+  ## the tsc value as exiting and the tscAux in the var param
+  if bmso.hasRdtscp:
+    discard getBegCycles()
+    discard getEndCycles()
+    discard getBegCycles()
+    result = getEndCycles(tscAux)
+  else:
+    discard getBegCycles()
+    discard getEndCyclesNoRdtscp()
+    discard getBegCycles()
+    result = getEndCyclesNoRdtscp()
+
+proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): float =
+  proc cps(seconds: float): float =
+    ## Determine the approximate cycles per second of the TSC.
+    ## The seconds parameter is the length of the meausrement.
+    ## return a value < 0.0 if unsuccessful. This happens if the
+    ## code detects if the thread migrated cpu's.
+    const
+      DBG = false
+
+    var
+      tscAuxInitial: int32
+      tscAuxNow: int32
+      start: int64
+      ec: int64
+      endTime: float
+
+    endTime = epochTime() + seconds
+    start = initializeCycles(bmso, tscAuxInitial)
+    while epochTime() <= endTime:
+      if bmso.hasRDTSCP:
+        ec = getEndCycles(tscAuxNow)
+      else:
+        ec = getEndCyclesNoRdtscp()
+      if tscAuxInitial != tscAuxNow:
+        when DBG:
+          echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4),
+            " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
+        return -1.0
+    result = float((ec - start)) / seconds
+
+  ## Call cps several times to maximize the chance
+  ## of getting a good value
+  for i in 0..2:
+    result = cps(seconds)
+    if result > 0.0:
+      return result
+  result = -1.0
 
 template measure(bmso: BmSuiteObj, durations: var openarray[float],
     bmsArray: var openarray[BmStats], body: stmt): bool =
   var
     ok: bool = true
-    tscAuxInitial: int
-    tscAuxNow: int
+    tscAuxInitial: int32
+    tscAuxNow: int32
     bc : int64
     ec : int64
 
   if DBG(bmso.verbosity): echo "measure: loopCount=", bmsArray.len
 
-  discard initializeCycles(tscAuxInitial)
+  discard initializeCycles(bmso, tscAuxInitial)
   for i in 0..bmsArray.len-1:
-    bc = getBegCycles()
-    body
-    ec = getEndCycles(tscAuxNow)
+    if bmso.hasRDTSCP:
+      bc = getBegCycles()
+      body
+      ec = getEndCycles(tscAuxNow)
+    else:
+      bc = getBegCycles()
+      body
+      ec = getEndCyclesNoRdtscp()
     var adjDuration = float(ec - bc) - bmso.overhead
     if adjDuration < 0: adjDuration = 0
     durations[i] = adjDuration
@@ -454,7 +488,7 @@ template measure(bmso: BmSuiteObj, durations: var openarray[float],
       echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
         float(bc)
     if tscAuxInitial != tscAuxNow:
-      # Switched CPU we can't trust rdtsc
+      # Switched CPU we can't trust duration
       if NRM(bmso.verbosity):
         echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x",
           toHex(tscAuxInitial, 4)
@@ -603,9 +637,11 @@ template suite*(nameSuite: string, warmupSeconds: float,
 
     # Initialize bmso
     bmso.suiteName = nameSuite
-    bmso.cyclesPerSec = cyclesPerSecond()
-    bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
     bmso.overhead = 0
+    bmso.hasRDTSCP = hasRDTSCP()
+    bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
+    bmso.cyclesPerSec = cyclesPerSecond(bmso)
+    echo "hasRDTSCP=", bmso.hasRDTSCP
 
     # Warmup the CPU
     bmWarmupCpu(bmso, warmupSeconds)
@@ -733,13 +769,20 @@ when isMainModule:
       # This isn't much of a check but something
       check(strg.startsWith("Intel") or (strg.len > 0 and strg.len < 48))
 
+    test "cpuid 0x80000001 feature bits":
+      ## Test feature bits which is used to look for RDTSCP instruction
+      var id = cpuid(0x80000001)
+      var resultsStr = "cpuid 0x80000001 id=" & $id
+      echo resultsStr
+      checkpoint(resultsStr)
+
+    test "mfence":
+      ## test mfence
+      mfence()
+
     test "cpuid ax, cx param":
       ## TODO: Devise a real test for cpuid with two parameters
       discard cpuid(0x8000_001D, 0)
-
-    test "cyclesPerSecond":
-      var cycles = cyclesPerSecond(0.25)
-      check(cycles > 0)
 
   ut.suite "test benchmark":
     ## Some simple tests
