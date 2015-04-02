@@ -1,99 +1,100 @@
-import benchmark, unittest
+import unittest as ut
+import benchmark
 
-suite "bmTests":
+ut.suite "benchmark tests":
 
-  test "test bmLoop, bmTime, bmSetup, bmTeardownn":
-    var bmSuiteCount = 0
+  ut.test "benchmark test and with and without setup/teardown":
+    var suiteCount = 0
 
-    check(bmSuiteCount == 0)
-    bmSuite "bmLoop", 0.0:
-      bmSuiteCount += 1
+    check(suiteCount == 0)
+    suite "loop tests", 0.0:
+      suiteCount += 1
 
       var
         bms : BmStats
         bmsArray: array[0..2, BmStats]
         loops = 0
-        bmSetupCalled = 0
-        bmTearDownCalled = 0
+        setupCalled = 0
+        teardownCalled = 0
 
-      bmSetup:
+      setup:
         loops = 0
-        bmSetupCalled += 1
+        setupCalled += 1
 
-      bmTearDown:
-        bmTearDownCalled += 1
+      teardown:
+        teardownCalled += 1
 
-      bmLoop "loop 10", 10, bmsArray:
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 0)
+      test "loop 10", 10, bmsArray:
+        check(setupCalled == 1)
+        check(teardownCalled == 0)
         loops += 1
       check(loops == 30)
-      check(bmSetupCalled == 1)
-      check(bmTearDownCalled == 1)
+      check(setupCalled == 1)
+      check(teardownCalled == 1)
       for i in 0..bmsArray.len-1:
         check(bmsArray[i].n == 10)
         check(bmsArray[i].min >= 0.0)
 
-      bmLoop "loop 1", 1, bms:
+      test "loop 1", 1, bms:
         loops += 1
         check(loops == 1)
-        check(bmSetupCalled == 2)
-        check(bmTearDownCalled == 1)
+        check(setupCalled == 2)
+        check(teardownCalled == 1)
 
       checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops == 1)
-      check(bmSetupCalled == 2)
-      check(bmTearDownCalled == 2)
+      check(setupCalled == 2)
+      check(teardownCalled == 2)
       check(bms.n == 1)
       check(bms.min >= 0.0)
 
-    check(bmSuiteCount == 1)
+    check(suiteCount == 1)
 
-    bmSuite "bmTime", 0:
-      bmSuiteCount += 1
+    suite "timing and loop tests", 0:
+      suiteCount += 1
 
       var
         bms: BmStats
         loops = 0
-        bmSetupCalled = 0
-        bmTearDownCalled = 0
+        setupCalled = 0
+        teardownCalled = 0
 
-      bmSetup:
+      setup:
         loops = 0
-        bmSetupCalled += 1
+        setupCalled += 1
 
-      bmTearDown:
-        bmTearDownCalled += 1
+      teardown:
+        teardownCalled += 1
 
-      bmTime "run 0.001 seconds ", 0.001, bms:
+      test "run 0.001 seconds ", 0.001, bms:
         loops += 1
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 0)
+        check(setupCalled == 1)
+        check(teardownCalled == 0)
 
       checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops > 100)
-      check(bmSetupCalled == 1)
-      check(bmTearDownCalled == 1)
+      check(setupCalled == 1)
+      check(teardownCalled == 1)
       check(bms.n > 1)
       check(bms.min >= 0.0)
 
-      bmSetup:
+      setup:
         discard
-      bmTearDown:
+      teardown:
         discard
 
       loops = 0
-      bmLoop "loop 2", 2, bms:
+      test "loop 2", 2, bms:
         loops += 1
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 1)
+        check(setupCalled == 1)
+        check(teardownCalled == 1)
 
       checkpoint(bmso.fullName & ": bms=" & $bms)
       check(loops == 2)
-      check(bmSetupCalled == 1)
-      check(bmTearDownCalled == 1)
+      check(setupCalled == 1)
+      check(teardownCalled == 1)
       check(bms.n == 2)
       check(bms.min >= 0.0)
 
     # Verify both suites executed
-    check(bmSuiteCount == 2)
+    check(suiteCount == 2)

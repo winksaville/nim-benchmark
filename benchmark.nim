@@ -1,18 +1,20 @@
 ## Benchmark will measure the duration it takes for some arbitrary
-## code to excute in the body of templates bmLoop or bmTime and
-## returns the information for the runs in BmStats.
+## code to excute in the body of the test templates and returns
+## the information for the runs in BmStats var parameter.
 ##
-## The template bmTime executes the body for the specified number
-## of seconds. The template bmLoop executes the body loopCount * N
-## times where N is the number of statistic buckets desired. 
+## There are  versions of the test templates you can specify
+## the number of loops or how long to execute the body. In addition
+## you can specify a single BmStats var parameter or a set of them
+## in an array. Also, if a loop count is specified and N BmStats
+## are passed in then the body will be executed loop count * N
+## time.
 ## 
-## The number of statistic buckets is defined by the BmStats parameter.
-## If array is passed then each run will consist of N sub runs where
-## N is the length of the array passed. The duration of the sub runs
-## are sorted from fastest to slowest and pushed into the corresponding
-## BmStats entry.  An array gives you a beter overview of the spread of
-## the performance as it's very difficult to get consistent data on modern
-## computers where there is a lot of contention for resources. Such as
+## As mentioned the number of statistic buckets is defined by the
+## BmStats parameter. The duration of the sub runs are sorted from
+## fastest to slowest and pushed into the corresponding BmStats entry.
+## An array gives you a beter overview of the spread of the performance
+## as it's very difficult to get consistent data on modern computers
+## where there is a lot of contention for resources. Such as
 ## interrupts, mutliple cores both logical and physical, multiple threads,
 ## migration of threads to different cores, the list is endless.
 ##
@@ -422,7 +424,7 @@ proc cyclesPerSecond*(seconds: float = DEFAULT_CPS_RUNTIME): float =
 type
   BmSuiteObj* = object ## Object associated with a bmSuite
     suiteName: string ## Name of the suite
-    runName: string ## Name of the current run
+    testName: string ## Name of the current run
     fullName: string ## Suite and Runame concatonated
     cyclesPerSec: float ## Frequency of cycle counter
     cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
@@ -532,7 +534,7 @@ proc bmEchoResults*(bmso: BmSuiteObj,
     bmsArray: openarray[BmStats]) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
-  ## code in bmTeardown.
+  ## code in teardown.
   var
     bmsArrayIdxStr = ""
     idx = 0
@@ -558,29 +560,29 @@ proc bmWarmupCpu*(bmso: BmSuiteObj, seconds: float) =
     v: int
   measureSecs(bmso, seconds, bmsa, inc(v))
 
-template bmSuite*(nameSuite: string, warmupSeconds: float,
+template suite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
-  ## Begin a benchmark suite. May contian one or more of bmSetup, bmTeardown,
+  ## Begin a benchmark suite. May contian one or more of setup, teardown,
   ## bmTime, bmLoop.  which are detailed below:
   ##::
   ##  var bmso {.inject.}: BmSuiteObj
   ##  ## Suite object
   ##::
-  ##  template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
+  ##  template setup*(setupBody: stmt): stmt {.immediate.} =
   ##    ## This is executed prior to each bmTime or bmLoop
   ##::
-  ##  template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
+  ##  template teardown*(teardownBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmTime or bmLoop
   ##::
   ##  template bmLoop*(nameRun: string, loopCount: int,
   ##                   bmsArray: var openarray[BmStats],
-  ##                   loopBody: stmt): stmt {.dirty.} =
-  ##    ## Run the loopBody loopCount * bmsArray.len times. Upon termination
+  ##                   testBody: stmt): stmt {.dirty.} =
+  ##    ## Run the testBody loopCount * bmsArray.len times. Upon termination
   ##    ## bmsArray contains the results.
   ##  template bmLoop*(nameRun: string, loopCount: int,
   ##                   bms: var BmStats,
-  ##                   loopBody: stmt): stmt {.dirty.} =
-  ##    ## Run the loopBody loopCount times. Upon termination bms
+  ##                   testBody: stmt): stmt {.dirty.} =
+  ##    ## Run the testBody loopCount times. Upon termination bms
   ##    ## contains the result.
   ##::
   ##  template bmTime*(nameRun: string, seconds: float,
@@ -614,85 +616,85 @@ template bmSuite*(nameSuite: string, warmupSeconds: float,
     if DBG(bmso.verbosity): echo "bmso.overhead=", bmso.overhead, " bms=", $bmsa[0]
 
     # The implementation of setup/teardown when invoked by bmTime
-    template bmSetupImpl*: stmt = discard
-    template bmTeardownImpl*: stmt = discard
+    template setupImpl*: stmt = discard
+    template teardownImpl*: stmt = discard
 
-    template bmSetup*(bmSetupBody: stmt): stmt {.immediate.} =
+    template setup*(setupBody: stmt): stmt {.immediate.} =
       ## This is executed prior to each bmTime or bmLoop
-      template bmSetupImpl*: stmt = bmSetupBody
+      template setupImpl*: stmt = setupBody
 
-    template bmTeardown*(bmTeardownBody: stmt): stmt {.immediate.} =
+    template teardown*(teardownBody: stmt): stmt {.immediate.} =
       ## This is executed after to each bmTime or bmLoop
-      template bmTeardownImpl*: stmt = bmTeardownBody
+      template teardownImpl*: stmt = teardownBody
 
-    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoop*(nameRun: string, loopCount: int,
+    # {.dirty.} is needed so setup/TeardownImpl are invokable???
+    template test*(nameRun: string, loopCount: int,
                      bmsArray: var openarray[BmStats],
-                     loopBody: stmt): stmt {.dirty.} =
-      ## Run the loopBody loopCount * bmsArray.len times. Upon termination
+                     testBody: stmt): stmt {.dirty.} =
+      ## Run the testBody loopCount * bmsArray.len times. Upon termination
       ## bmsArray contains the results.
       block:
         try:
-          bmso.runName = nameRun
-          bmso.fullName = bmso.suiteName & "." & bmso.runName
+          bmso.testName = nameRun
+          bmso.fullName = bmso.suiteName & "." & bmso.testName
           bmsArray.zero()
-          bmSetupImpl()
-          measureLoops(bmso, loopCount, bmsArray, loopBody)
+          setupImpl()
+          measureLoops(bmso, loopCount, bmsArray, testBody)
         except:
           if NRM(bmso.verbosity):
             echo "bmLoop ", bmso.fullName &
               ": exception=", getCurrentExceptionMsg()
         finally:
-          bmTeardownImpl()
+          teardownImpl()
           bmEchoResults(bmso, bmsArray)
 
-    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmLoop*(nameRun: string, loopCount: int,
-        bms: var BmStats, loopBody: stmt): stmt {.dirty.} =
-      ## Run the loopBody loopCount times. Upon termination bms
+    # {.dirty.} is needed so setup/TeardownImpl are invokable???
+    template test*(nameRun: string, loopCount: int,
+        bms: var BmStats, testBody: stmt): stmt {.dirty.} =
+      ## Run the testBody loopCount times. Upon termination bms
       ## contains the result.
       block:
         var bmsArray: array[0..0, BmStats]
-        bmLoop(nameRun, loopCount, bmsArray, loopBody)
+        test(nameRun, loopCount, bmsArray, testBody)
         bms = bmsArray[0]
 
-    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmTime*(nameRun: string, seconds: float,
+    # {.dirty.} is needed so setup/TeardownImpl are invokable???
+    template test*(nameRun: string, seconds: float,
         bmsArray: var openarray[BmStats], timeBody: stmt): stmt {.dirty.} =
       ## Run the timeBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray. Upon termination bmsArray contiains
       ## the results.
       block:
         try:
-          bmso.runName = nameRun
-          bmso.fullName = bmso.suiteName & "." & bmso.runName
+          bmso.testName = nameRun
+          bmso.fullName = bmso.suiteName & "." & bmso.testName
           bmsArray.zero()
-          bmSetupImpl()
+          setupImpl()
           measureSecs(bmso, seconds, bmsArray, timeBody)
         except:
           if NRM(bmso.verbosity):
             echo "bmTime ", bmso.fullName,
               ": exception=", getCurrentExceptionMsg()
         finally:
-          bmTeardownImpl()
+          teardownImpl()
           if NRM(bmso.verbosity):
             bmEchoResults(bmso, bmsArray)
 
-    # {.dirty.} is needed so bmSetup/TeardownImpl are invokable???
-    template bmTime*(nameRun: string, seconds: float, bms: var BmStats,
+    # {.dirty.} is needed so setup/TeardownImpl are invokable???
+    template test*(nameRun: string, seconds: float, bms: var BmStats,
         timeBody: stmt): stmt {.dirty.} =
       ## Run the timeBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray with bms containing the results.
       block:
         var bmsArray: array[0..0, BmStats]
-        bmTime(nameRun, seconds, bmsArray, timeBody)
+        test(nameRun, seconds, bmsArray, timeBody)
         bms = bmsArray[0]
 
     # Instanitate the suite body
     bmSuiteBody
 
 when isMainModule:
-  import unittest
+  import unittest as ut
 
   proc unpackIntToStr(val: int, strg: var string) =
     var value = val
@@ -700,7 +702,7 @@ when isMainModule:
       strg.add(cast[char](value and 0xFF))
       value = value shr 8
 
-  suite "cpuid and rdtsc":
+  ut.suite "cpuid and rdtsc":
     test "cpuid 0x0":
       ## Input: EAX=0
       ## Return:
@@ -739,93 +741,93 @@ when isMainModule:
       var cycles = cyclesPerSecond(0.25)
       check(cycles > 0)
 
-  suite "test bm":
+  ut.suite "test benchmark":
     ## Some simple tests
-    test "bmSuite":
+    ut.test "suite":
 
-      bmSuite "bmLoop", 1.0:
+      suite "loop", 1.0:
         var
           bms: BmStats
           loops = 0
-          bmSetupCalled = 0
-          bmTearDownCalled = 0
+          setupCalled = 0
+          teardownCalled = 0
 
-        bmSetup:
+        setup:
           loops = 0
-          bmSetupCalled += 1
+          setupCalled += 1
 
-        bmTearDown:
-          bmTearDownCalled += 1
+        teardown:
+          teardownCalled += 1
 
-        bmLoop "loop 1", 1, bms:
-          check(bmSetupCalled == 1)
-          check(bmTearDownCalled == 0)
+        test "loop 1", 1, bms:
+          check(setupCalled == 1)
+          check(teardownCalled == 0)
           loops += 1
         checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops == 1)
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 1)
+        check(setupCalled == 1)
+        check(teardownCalled == 1)
         check(bms.n == 1)
         check(bms.min >= 0.0)
 
-        bmLoop "loop 2", 2, bms:
-          check(bmSetupCalled == 2)
-          check(bmTearDownCalled == 1)
+        test "loop 2", 2, bms:
+          check(setupCalled == 2)
+          check(teardownCalled == 1)
           loops += 1
         checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops == 2)
-        check(bmSetupCalled == 2)
-        check(bmTearDownCalled == 2)
+        check(setupCalled == 2)
+        check(teardownCalled == 2)
         check(bms.n == 2)
         check(bms.min >= 0.0)
 
-      bmSuite "bmTime", 0.0:
+      suite "time", 0.0:
         var
           bms: BmStats
           loops = 0
-          bmSetupCalled = 0
-          bmTearDownCalled = 0
+          setupCalled = 0
+          teardownCalled = 0
 
-        bmSetup:
+        setup:
           loops = 0
-          bmSetupCalled += 1
+          setupCalled += 1
 
-        bmTearDown:
-          bmTearDownCalled += 1
+        teardown:
+          teardownCalled += 1
 
-        bmTime "+=1 0.001 secs", 0.001, bms:
+        test "+=1 0.001 secs", 0.001, bms:
           loops += 1
-          check(bmSetupCalled == 1)
-          check(bmTearDownCalled == 0)
+          check(setupCalled == 1)
+          check(teardownCalled == 0)
 
         checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops > 100)
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 1)
+        check(setupCalled == 1)
+        check(teardownCalled == 1)
         check(bms.n > 1)
         check(bms.min >= 0.0)
 
-      bmSuite "bmTime", 0:
+      suite "bmTime", 0:
         var
           bms: BmStats
           loops = 0
-          bmSetupCalled = 0
-          bmTearDownCalled = 0
+          setupCalled = 0
+          teardownCalled = 0
 
-        bmSetup:
+        setup:
           loops = 0
-          bmSetupCalled += 1
+          setupCalled += 1
 
-        bmTearDown:
+        teardown:
           bmso.verbosity = Verbosity.dbg
-          bmTearDownCalled += 1
+          teardownCalled += 1
 
-        bmTime "atomicInc 2 secs", 2.0, bms:
+        test "atomicInc 2 secs", 2.0, bms:
           atomicInc(loops)
-          check(bmSetupCalled == 1)
-          check(bmTearDownCalled == 0)
+          check(setupCalled == 1)
+          check(teardownCalled == 0)
 
         checkpoint(bmso.fullName & ": bms=" & $bms)
         check(loops > 100)
-        check(bmSetupCalled == 1)
-        check(bmTearDownCalled == 1)
+        check(setupCalled == 1)
+        check(teardownCalled == 1)
