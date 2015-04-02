@@ -1,6 +1,5 @@
 # Global patterns
 *.swp
-*.html
 .DS_STORE
 nimcache/
 

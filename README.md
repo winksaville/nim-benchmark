@@ -1,18 +1,20 @@
 Benchmark will measure the duration it takes for some arbitrary
-code to excute in the body of templates bmLoop or bmTime and
-returns the information for the runs in BmStats.
+code to excute in the body of the test templates and returns
+the information for the runs in BmStats var parameter.
 
-The template bmTime executes the body for the specified number
-of seconds. The template bmLoop executes the body loopCount * N
-times where N is the number of statistic buckets desired.
+There are  versions of the test templates you can specify
+the number of loops or how long to execute the body. In addition
+you can specify a single BmStats var parameter or a set of them
+in an array. Also, if a loop count is specified and N BmStats
+are passed in then the body will be executed loop count * N
+time.
 
-The number of statistic buckets is defined by the BmStats parameter.
-If array is passed then each run will consist of N sub runs where
-N is the length of the array passed. The duration of the sub runs
-are sorted from fastest to slowest and pushed into the corresponding
-BmStats entry.  An array gives you a beter overview of the spread of
-the performance as it's very difficult to get consistent data on modern
-computers where there is a lot of contention for resources. Such as
+As mentioned the number of statistic buckets is defined by the
+BmStats parameter. The duration of the sub runs are sorted from
+fastest to slowest and pushed into the corresponding BmStats entry.
+An array gives you a beter overview of the spread of the performance
+as it's very difficult to get consistent data on modern computers
+where there is a lot of contention for resources. Such as
 interrupts, mutliple cores both logical and physical, multiple threads,
 migration of threads to different cores, the list is endless.
 
@@ -44,7 +46,7 @@ atomicInc(loops) is faster, 48cy, then inc(loops) which is
 unexpected. Also minC was only 1 which means that for the
 400,000+ executions of the inc(loops) and atomicInc(loops)
 only 1 was at min value, 50cy or 48cy respectively. This
-doesn't give you a lot confidence in the data.
+doesn't give you a lot confidence in the data. 
 ```
 $ nim c --hints:off exmpl/bminc.nim
 CC: benchmark_bminc2
@@ -98,7 +100,7 @@ increment.atomicInc: bms[0]={min=48cy mean=71cy minC=2 n=175137}
 increment.atomicInc: bms[1]={min=52cy mean=73cy minC=61 n=175137}
 increment.atomicInc: bms[2]={min=52cy mean=76cy minC=3 n=175137}
 increment.atomicInc: bms[3]={min=54cy mean=78cy minC=1 n=175137}
-increment.atomicInc: bms[4]={min=68cy mean=84cy minC=3780 n=175137}
+increment.atomicInc: bms[4]={min=68cy mean=84cy minC=3780 n=175137}# 
 ```
 Lets turn on threading and see what happens maybe that will
 make a difference. And sure enough we now see that inc is

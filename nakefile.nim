@@ -14,6 +14,7 @@ const
 
 task defaultTask, "Clean, Compile and run the tests":
   runTask "clean"
+  runTask "docs"
   runTask "build-tests"
   runTask "run-tests"
 
