@@ -2,7 +2,7 @@ import nake
 
 const
   buildArtifacts =
-    @["benchmark", "benchmark.html", "nimcache", "t",
+    @["benchmark", "nimcache", "t",
       "tests/test", "tests/test.html", "tests/nimcache",
       "exmpl/bmnimc", "exmpl/bminc", "exmpl/bminc2", "exmpl/nimcache"]
   #buildFlags = "-d:release --verbosity:1 --hints:off --warnings:off --threads:on --embedsrc --lineDir:on"
@@ -22,6 +22,14 @@ task "bm", "Build and run benchmark for its tests":
   if not shell(nimExe, "c -r",  buildFlags, "benchmark.nim"):
     echo "error compiling"
     quit 1
+
+task "build-bm", "Build benchmark":
+  if not shell(nimExe, "c ",  buildFlags, "benchmark.nim"):
+    echo "error compiling"
+    quit 1
+
+task "run-bm", "Build benchmark":
+  discard shell("benchmark")
 
 task "docs", "Buiild the documents":
   for file in docFiles:

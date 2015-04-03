@@ -1160,19 +1160,10 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#Verbosity"
     title="Verbosity* = enum 
-  none = - 1,                 ## Nothing output
-  normal = 0,                 ## Normal outout at end of run
-  dbg = 1,                    ## Additional debug output
-  dbgv = 2                    ## Copious output"><wbr />Verbosity</a></li>
-  <li><a class="reference" href="#BmStats"
-    title="BmStats* = object 
-  n*: int                     ## number of data points
-  minC*: int                  ## number of data points == min
-  maxC*: int                  ## number of data points == max
-  sum*, min*, max*, mean*: float ## self-explaining
-  oldM, oldS, newS: float"><wbr />Bm<wbr />Stats</a></li>
-  <li><a class="reference" href="#CpuId"
-    title="CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]"><wbr />Cpu<wbr />Id</a></li>
+  none = 0,                   ## Nothing output
+  normal = 1,                 ## Normal outout at end of run
+  debug = 2,                  ## Additional debug output
+  verbose = 3                 ## Copious output"><wbr />Verbosity</a></li>
   <li><a class="reference" href="#BmSuiteObj"
     title="BmSuiteObj* = object 
   suiteName: string           ## Name of the suite
@@ -1183,6 +1174,23 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   verbosity: Verbosity        ## Verbosity of output
   overhead: float             ## Number of cycles overhead to be substracted when measuring
   hasRDTSCP: bool             ## True if the cpu has RDTSCP instruction"><wbr />Bm<wbr />Suite<wbr />Obj</a></li>
+  <li><a class="reference" href="#BmStats"
+    title="BmStats* = object 
+  n*: int                     ## number of data points
+  minC*: int                  ## number of data points == min
+  maxC*: int                  ## number of data points == max
+  sum*, min*, max*, mean*: float ## self-explaining
+  oldM, oldS, newS: float"><wbr />Bm<wbr />Stats</a></li>
+  <li><a class="reference" href="#CpuId"
+    title="CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]"><wbr />Cpu<wbr />Id</a></li>
+
+  </ul>
+</li>
+<li>
+  <a class="reference reference-toplevel" href="#8" id="58">Vars</a>
+  <ul class="simple simple-toc-section">
+      <li><a class="reference" href="#bmDefaultVerbosity"
+    title="bmDefaultVerbosity* = Verbosity.normal"><wbr />bm<wbr />Default<wbr />Verbosity</a></li>
 
   </ul>
 </li>
@@ -1191,12 +1199,26 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#NONE,Verbosity"
     title="NONE*(verbosity: Verbosity): bool"><wbr />NONE</a></li>
-  <li><a class="reference" href="#NRM,Verbosity"
-    title="NRM*(verbosity: Verbosity): bool"><wbr />NRM</a></li>
+  <li><a class="reference" href="#NRML,Verbosity"
+    title="NRML*(verbosity: Verbosity): bool"><wbr />NRML</a></li>
   <li><a class="reference" href="#DBG,Verbosity"
     title="DBG*(verbosity: Verbosity): bool"><wbr />DBG</a></li>
   <li><a class="reference" href="#DBGV,Verbosity"
     title="DBGV*(verbosity: Verbosity): bool"><wbr />DBGV</a></li>
+  <li><a class="reference" href="#NONE,BmSuiteObj"
+    title="NONE*(bmso: BmSuiteObj): bool"><wbr />NONE</a></li>
+  <li><a class="reference" href="#NRML,BmSuiteObj"
+    title="NRML*(bmso: BmSuiteObj): bool"><wbr />NRML</a></li>
+  <li><a class="reference" href="#DBG,BmSuiteObj"
+    title="DBG*(bmso: BmSuiteObj): bool"><wbr />DBG</a></li>
+  <li><a class="reference" href="#DBGV,BmSuiteObj"
+    title="DBGV*(bmso: BmSuiteObj): bool"><wbr />DBGV</a></li>
+  <li><a class="reference" href="#secToStr,float"
+    title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
+  <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float"
+    title="cyclesToStr*(bmso: BmSuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
+  <li><a class="reference" href="#$,BmSuiteObj"
+    title="`$`*(bmso: BmSuiteObj): string">`<wbr />$`</a></li>
   <li><a class="reference" href="#$,BmStats"
     title="`$`*(s: BmStats): string">`<wbr />$`</a></li>
   <li><a class="reference" href="#zero,BmStats"
@@ -1213,9 +1235,9 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
     title="standardDeviation*(s: BmStats): float"><wbr />standard<wbr />Deviation</a></li>
   <li><a class="reference" href="#cyclesPerSecond,BmSuiteObj,float"
     title="cyclesPerSecond*(bmso: BmSuiteObj; seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
-  <li><a class="reference" href="#secToStr,float"
+  <li><a class="reference" href="#secToStr,float_2"
     title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float"
+  <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float_2"
     title="cyclesToStr*(bmso: BmSuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
   <li><a class="reference" href="#bmStatsToStr,BmSuiteObj,BmStats"
     title="bmStatsToStr*(bmso: BmSuiteObj; s: BmStats): string"><wbr />bm<wbr />Stats<wbr />To<wbr />Str</a></li>
@@ -1354,12 +1376,26 @@ increment.atomicInc: bms[4]={min=28cy mean=48cy minC=2733 n=355885}</pre>
 <h1><a class="toc-backref" href="#7">Types</a></h1>
 <dl class="item">
 <dt id="Verbosity"><a name="Verbosity"></a><pre><span class="Identifier">Verbosity</span><span class="Operator">*</span> <span class="Other">{.</span><span class="Identifier">pure</span><span class="Other">.}</span> <span class="Other">=</span> <span class="Keyword">enum</span> 
-  <span class="Identifier">none</span> <span class="Other">=</span> <span class="Operator">-</span> <span class="DecNumber">1</span><span class="Other">,</span>                 <span class="Comment">## Nothing output</span>
-  <span class="Identifier">normal</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">,</span>                 <span class="Comment">## Normal outout at end of run</span>
-  <span class="Identifier">dbg</span> <span class="Other">=</span> <span class="DecNumber">1</span><span class="Other">,</span>                    <span class="Comment">## Additional debug output</span>
-  <span class="Identifier">dbgv</span> <span class="Other">=</span> <span class="DecNumber">2</span>                    <span class="Comment">## Copious output</span></pre></dt>
+  <span class="Identifier">none</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">,</span>                   <span class="Comment">## Nothing output</span>
+  <span class="Identifier">normal</span> <span class="Other">=</span> <span class="DecNumber">1</span><span class="Other">,</span>                 <span class="Comment">## Normal outout at end of run</span>
+  <span class="Identifier">debug</span> <span class="Other">=</span> <span class="DecNumber">2</span><span class="Other">,</span>                  <span class="Comment">## Additional debug output</span>
+  <span class="Identifier">verbose</span> <span class="Other">=</span> <span class="DecNumber">3</span>                 <span class="Comment">## Copious output</span></pre></dt>
 <dd>
 Logging verbosity
+
+</dd>
+<dt id="BmSuiteObj"><a name="BmSuiteObj"></a><pre><span class="Identifier">BmSuiteObj</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
+  <span class="Identifier">suiteName</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Name of the suite</span>
+  <span class="Identifier">testName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Name of the current run</span>
+  <span class="Identifier">fullName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Suite and Runame concatonated</span>
+  <span class="Identifier">cyclesPerSec</span><span class="Other">:</span> <span class="Identifier">float</span>         <span class="Comment">## Frequency of cycle counter</span>
+  <span class="Identifier">cyclesToSecThreshold</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
+  <span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span>        <span class="Comment">## Verbosity of output</span>
+  <span class="Identifier">overhead</span><span class="Other">:</span> <span class="Identifier">float</span>             <span class="Comment">## Number of cycles overhead to be substracted when measuring</span>
+  <span class="Identifier">hasRDTSCP</span><span class="Other">:</span> <span class="Identifier">bool</span>             <span class="Comment">## True if the cpu has RDTSCP instruction</span>
+  </pre></dt>
+<dd>
+Object associated with a bmSuite
 
 </dd>
 <dt id="BmStats"><a name="BmStats"></a><pre><span class="Identifier">BmStats</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
@@ -1378,18 +1414,14 @@ Statistical benchmark data
 EAX..EDX registers returned by CPUID instruciton
 
 </dd>
-<dt id="BmSuiteObj"><a name="BmSuiteObj"></a><pre><span class="Identifier">BmSuiteObj</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
-  <span class="Identifier">suiteName</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Name of the suite</span>
-  <span class="Identifier">testName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Name of the current run</span>
-  <span class="Identifier">fullName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Suite and Runame concatonated</span>
-  <span class="Identifier">cyclesPerSec</span><span class="Other">:</span> <span class="Identifier">float</span>         <span class="Comment">## Frequency of cycle counter</span>
-  <span class="Identifier">cyclesToSecThreshold</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
-  <span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span>        <span class="Comment">## Verbosity of output</span>
-  <span class="Identifier">overhead</span><span class="Other">:</span> <span class="Identifier">float</span>             <span class="Comment">## Number of cycles overhead to be substracted when measuring</span>
-  <span class="Identifier">hasRDTSCP</span><span class="Other">:</span> <span class="Identifier">bool</span>             <span class="Comment">## True if the cpu has RDTSCP instruction</span>
-  </pre></dt>
+
+</dl></div>
+<div class="section" id="8">
+<h1><a class="toc-backref" href="#8">Vars</a></h1>
+<dl class="item">
+<dt id="bmDefaultVerbosity"><a name="bmDefaultVerbosity"></a><pre><span class="Identifier">bmDefaultVerbosity</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Identifier">Verbosity</span><span class="Other">.</span><span class="Identifier">normal</span></pre></dt>
 <dd>
-Object associated with a bmSuite
+
 
 </dd>
 
@@ -1399,22 +1431,57 @@ Object associated with a bmSuite
 <dl class="item">
 <dt id="NONE"><a name="NONE,Verbosity"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NONE</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if Verbosity == Verbosity.none
+Return true if verbosity == Verbosity.none
 
 </dd>
-<dt id="NRM"><a name="NRM,Verbosity"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NRM</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dt id="NRML"><a name="NRML,Verbosity"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NRML</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if Verbosity &gt;= Verbosity.normal
+Return true if verbosity &gt;= Verbosity.normal
 
 </dd>
 <dt id="DBG"><a name="DBG,Verbosity"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBG</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if Verbosity &gt;= Verbosity.dbg
+Return true if verbosity &gt;= Verbosity.debug
 
 </dd>
 <dt id="DBGV"><a name="DBGV,Verbosity"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBGV</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if Verbosity &gt;= Verbosity.dbgv
+Return true if verbosity &gt;= Verbosity.verbose
+
+</dd>
+<dt id="NONE"><a name="NONE,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NONE</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dd>
+Return true if bmso.verbosity == Verbosity.none
+
+</dd>
+<dt id="NRML"><a name="NRML,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NRML</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dd>
+Return true if bsmo.verbosity &gt;= Verbosity.normal
+
+</dd>
+<dt id="DBG"><a name="DBG,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBG</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dd>
+Return true if bmso.verbosity &gt;= Verbosity.debug
+
+</dd>
+<dt id="DBGV"><a name="DBGV,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBGV</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dd>
+Return true if bmso.verbosity &gt;= Verbosity.verbose
+
+</dd>
+<dt id="secToStr"><a name="secToStr,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dd>
+
+
+</dd>
+<dt id="cyclesToStr"><a name="cyclesToStr,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dd>
+
+
+</dd>
+<dt id="$"><a name="$,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dd>
+
 
 </dd>
 <dt id="$"><a name="$,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">BmStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
@@ -1457,12 +1524,12 @@ Computes the current standard deviation of <cite>s</cite>
 Determine the approximate cycles per second of the TSC. The seconds parameter is the length of the meausrement. return a value &lt; 0.0 if unsuccessful. This happens if the code detects if the thread migrated cpu's.
 
 </dd>
-<dt id="secToStr"><a name="secToStr,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="secToStr"><a name="secToStr,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
 Convert seconds to string with suffix if possible
 
 </dd>
-<dt id="cyclesToStr"><a name="cyclesToStr,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="cyclesToStr"><a name="cyclesToStr,BmSuiteObj,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
 Convert cycles to string either as cycles or time depending upon bmso.cyclesToSecThreshold
 
@@ -1496,26 +1563,26 @@ Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmL
   ## This is executed prior to each bmTime or bmLoop</pre>
 <pre>template teardown*(teardownBody: stmt): stmt {.immediate.} =
   ## This is executed after to each bmTime or bmLoop</pre>
-<pre>template bmLoop*(nameRun: string, loopCount: int,
+<pre>template test*(nameRun: string, loopCount: int,
                  bmsArray: var openarray[BmStats],
                  testBody: stmt): stmt {.dirty.} =
   ## Run the testBody loopCount * bmsArray.len times. Upon termination
-  ## bmsArray contains the results.
-template bmLoop*(nameRun: string, loopCount: int,
+  ## bmsArray contains the results.</pre>
+<pre>template test*(nameRun: string, loopCount: int,
                  bms: var BmStats,
                  testBody: stmt): stmt {.dirty.} =
   ## Run the testBody loopCount times. Upon termination bms
   ## contains the result.</pre>
-<pre>template bmTime*(nameRun: string, seconds: float,
+<pre>template test*(nameRun: string, seconds: float,
                  bmsArray: var openarray[BmStats],
-                 timeBody: stmt): stmt {.dirty.} =
-  ## Run the timeBody in a loop for seconds and the number of loops will be
+                 testBody: stmt): stmt {.dirty.} =
+  ## Run the testBody in a loop for seconds and the number of loops will be
   ## modulo the length of bmsArray. Upon termination bmsArray contiains
-  ## the results.
-template bmTime*(nameRun: string, seconds: float,
+  ## the results.</pre>
+<pre>template test*(nameRun: string, seconds: float,
                  bms: var BmStats,
-                 timeBody: stmt): stmt {.dirty.} =
-  ## Run the timeBody in a loop for seconds and the number of loops will be
+                 testBody: stmt): stmt {.dirty.} =
+  ## Run the testBody in a loop for seconds and the number of loops will be
   ## modulo the length of bmsArray with bms containing the results.</pre>
 
 
@@ -1530,7 +1597,7 @@ template bmTime*(nameRun: string, seconds: float,
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-02 14:21:59 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-02 22:33:01 UTC</small>
       </div>
     </div>
   </div>

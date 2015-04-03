@@ -170,36 +170,80 @@
 import algorithm, math, times, os, posix, strutils
 export math, algorithm
 
-# forward decls
-#proc secToStr*(seconds: float): string
-#proc cyclesToStr*(cycles: float, cps: float): string
-
 const
+  DEBUG = false
+  USE_RDTSCP_FOR_END_CYCLES = false
   DEFAULT_CPS_RUNTIME = 0.25
   DEFAULT_CYCLES_TO_SEC_THRESHOLD = 1_000.0
 
 type
   Verbosity* {.pure.} = enum  ## Logging verbosity
-    none = -1                 ## Nothing output
-    normal = 0                ## Normal outout at end of run
-    dbg = 1                   ## Additional debug output
-    dbgv = 2                  ## Copious output
+    none = 0 ## Nothing output
+    normal = 1 ## Normal outout at end of run
+    debug = 2 ## Additional debug output
+    verbose = 3 ## Copious output
+
+  BmSuiteObj* = object ## Object associated with a bmSuite
+    suiteName: string ## Name of the suite
+    testName: string ## Name of the current run
+    fullName: string ## Suite and Runame concatonated
+    cyclesPerSec: float ## Frequency of cycle counter
+    cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
+    verbosity: Verbosity ## Verbosity of output
+    overhead: float ## Number of cycles overhead to be substracted when measuring
+    hasRDTSCP: bool ## True if the cpu has RDTSCP instruction
+
+var
+  bmDefaultVerbosity* = Verbosity.normal
 
 proc NONE*(verbosity: Verbosity): bool {.inline.} =
-  ## Return true if Verbosity == Verbosity.none
+  ## Return true if verbosity == Verbosity.none
   result = verbosity == Verbosity.normal
 
-proc NRM*(verbosity: Verbosity): bool {.inline.} =
-  ## Return true if Verbosity >= Verbosity.normal
+proc NRML*(verbosity: Verbosity): bool {.inline.} =
+  ## Return true if verbosity >= Verbosity.normal
   result = verbosity >= Verbosity.normal
 
 proc DBG*(verbosity: Verbosity): bool {.inline.} =
-  ## Return true if Verbosity >= Verbosity.dbg
-  result = verbosity >= Verbosity.dbg
+  ## Return true if verbosity >= Verbosity.debug
+  result = verbosity >= Verbosity.debug
 
 proc DBGV*(verbosity: Verbosity): bool {.inline.} =
-  ## Return true if Verbosity >= Verbosity.dbgv
-  result = verbosity >= Verbosity.dbgv
+  ## Return true if verbosity >= Verbosity.verbose
+  result = verbosity >= Verbosity.verbose
+
+proc NONE*(bmso: BmSuiteObj): bool {.inline.} =
+  ## Return true if bmso.verbosity == Verbosity.none
+  result = NONE(bmso.verbosity)
+
+proc NRML*(bmso: BmSuiteObj): bool {.inline.} =
+  ## Return true if bsmo.verbosity >= Verbosity.normal
+  result = NRML(bmso.verbosity)
+
+proc DBG*(bmso: BmSuiteObj): bool {.inline.} =
+  ## Return true if bmso.verbosity >= Verbosity.debug
+  result = DBG(bmso.verbosity)
+
+proc DBGV*(bmso: BmSuiteObj): bool {.inline.} =
+  ## Return true if bmso.verbosity >= Verbosity.verbose
+  result = DBGV(bmso.verbosity)
+
+# Forward decls
+proc secToStr*(seconds: float): string
+proc cyclesToStr*(bmso: BmSuiteObj, cycles: float): string
+
+proc strOrNil(s: string): string =
+  result = if s == nil: "nil" else: s
+
+proc `$`*(bmso: BmSuiteObj): string =
+  result = "{suiteName=" & strOrNil(bmso.suiteName) &
+           " testName=" & strOrNil(bmso.testName) &
+           " fullName=" & strOrNil(bmso.fullName) &
+           " cyclesPerSec=" & secToStr(bmso.cyclesPerSec) &
+           " cyclesToSecThreshold=" & secToStr(bmso.cyclesToSecThreshold) &
+           " verbosity=" & $bmso.verbosity &
+           " overhead=" & cyclesToStr(bmso, bmso.overhead) &
+           " hasRDTSCP=" & $bmso.hasRDTSCP & "}"
 
 type
   BmStats* = object                     ## Statistical benchmark data
@@ -346,6 +390,7 @@ proc rdtsc(): int64 {.inline.} =
       :"=a"(`lo`), "=d"(`hi`));
   """.}
   result = int64(lo) or (int64(hi) shl 32)
+  when DEBUG: echo "rdtsc:-  result=", result
 
 proc rdtscp(): int64 {.inline.} =
   ## Execute the rdtscp, read Time Stamp Counter, instruction
@@ -357,10 +402,11 @@ proc rdtscp(): int64 {.inline.} =
       :"=a"(`lo`), "=d"(`hi`));
   """.}
   result = int64(lo) or (int64(hi) shl 32)
+  when DEBUG: echo "rdtscp:- result=", result
 
 proc rdtscp(tscAux: var int32): int64 {.inline.} =
   ## Execute the rdtscp, read Time Stamp Counter, instruction
-  ## returns the 64 bit TSC value and writes to ecx to tscAux value.
+  ## returns the 64 bit TSC value and writes ecx to tscAux value.
   ## The tscAux value is the logical cpu number and can be used
   ## to determine if the thread migrated to a different cpu and
   ## thus the returned value is suspect.
@@ -372,16 +418,24 @@ proc rdtscp(tscAux: var int32): int64 {.inline.} =
   """.}
   tscAux = aux
   result = int64(lo) or (int64(hi) shl 32)
+  when DEBUG: echo "rdtscp:- result=", result, " tscAux=", tscAux
+
+proc rdTscAux(): int32 {.inline.} =
+  ## Use rdtscp to read just tscAux value from ecx
+  var aux: int32
+  {.emit: """
+    asm volatile (
+      "rdtscp\n\t"
+      :"=c"(`aux`));
+  """.}
+  result = aux
+  when DEBUG: echo "rdTscAux:- result=", result
+
 
 proc getBegCycles(): int64 {.inline.} =
   ## Return TSC to be used at the beginning of the measurement.
   cpuid()
   result = rdtsc()
-
-proc getEndCycles(): int64 {.inline.} =
-  ## Return TSC to be used at the end of the measurement.
-  result = rdtscp()
-  cpuid()
 
 proc getEndCyclesNoRdtscp(): int64 {.inline.} =
   ## Return TSC to be used at the end of the measurement.
@@ -394,26 +448,23 @@ proc getEndCycles(tscAux: var int32): int64 {.inline.} =
   ## logical cpu number and can be used to determine if
   ## the thread migrated to a different cpu and thus the
   ## returned value is suspect.
-  result = rdtscp(tscAux)
-  cpuid()
-
-type
-  BmSuiteObj* = object ## Object associated with a bmSuite
-    suiteName: string ## Name of the suite
-    testName: string ## Name of the current run
-    fullName: string ## Suite and Runame concatonated
-    cyclesPerSec: float ## Frequency of cycle counter
-    cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
-    verbosity: Verbosity ## Verbosity of output
-    overhead: float ## Number of cycles overhead to be substracted when measuring
-    hasRDTSCP: bool ## True if the cpu has RDTSCP instruction
+  when USE_RDTSCP_FOR_END_CYCLES:
+    # For some reason this is very unreliable and on my linux desktop
+    # negative TSC values in are frequently returned in result!
+    result = rdtscp(tscAux)
+    cpuid()
+  else:
+    tscAux = rdTscAux()
+    result = rdtsc()
+    mfence()
 
 proc initializeCycles(bmso: BmSuiteObj, tscAux: var int32): int64 {.inline.} =
   ## Initalize as per the ia32-ia64-benchmark document returning
   ## the tsc value as exiting and the tscAux in the var param
+  if DBGV(bmso): echo "initializeCycles:+"
   if bmso.hasRdtscp:
     discard getBegCycles()
-    discard getEndCycles()
+    discard getEndCycles(tscAux)
     discard getBegCycles()
     result = getEndCycles(tscAux)
   else:
@@ -421,6 +472,7 @@ proc initializeCycles(bmso: BmSuiteObj, tscAux: var int32): int64 {.inline.} =
     discard getEndCyclesNoRdtscp()
     discard getBegCycles()
     result = getEndCyclesNoRdtscp()
+  if DBGV(bmso): echo "initializeCycles:- result=", result, " tscAux=", tscAux
 
 proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): float =
   proc cps(seconds: float): float =
@@ -428,9 +480,6 @@ proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): f
     ## The seconds parameter is the length of the meausrement.
     ## return a value < 0.0 if unsuccessful. This happens if the
     ## code detects if the thread migrated cpu's.
-    const
-      DBG = false
-
     var
       tscAuxInitial: int32
       tscAuxNow: int32
@@ -446,19 +495,22 @@ proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): f
       else:
         ec = getEndCyclesNoRdtscp()
       if tscAuxInitial != tscAuxNow:
-        when DBG:
-          echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4),
-            " != tscAuxInitial=0x", toHex(tscAuxInitial, 4)
+        if DBG(bmso):
+          echo "cps:- BAD tscAuxNow:", tscAuxNow,
+            " != tscAuxInitial:", tscAuxInitial
         return -1.0
     result = float((ec - start)) / seconds
 
   ## Call cps several times to maximize the chance
   ## of getting a good value
+  if DBG(bmso): echo "cyclesPerSecond:+ seconds=", seconds
   for i in 0..2:
     result = cps(seconds)
     if result > 0.0:
+      if DBG(bmso): echo "cyclesPerSecond:- result=", result
       return result
   result = -1.0
+  if DBG(bmso): echo "cyclesPerSecond:- BAD result=", result
 
 template measure(bmso: BmSuiteObj, durations: var openarray[float],
     bmsArray: var openarray[BmStats], body: stmt): bool =
@@ -469,9 +521,11 @@ template measure(bmso: BmSuiteObj, durations: var openarray[float],
     bc : int64
     ec : int64
 
-  if DBG(bmso.verbosity): echo "measure: loopCount=", bmsArray.len
-
+  if DBGV(bmso): echo "measure:+"
   discard initializeCycles(bmso, tscAuxInitial)
+  if DBGV(bmso):
+    echo "measure:  before loop loopCount=", bmsArray.len,
+      " tscAuxInitial=", tscAuxInitial
   for i in 0..bmsArray.len-1:
     if bmso.hasRDTSCP:
       bc = getBegCycles()
@@ -481,30 +535,34 @@ template measure(bmso: BmSuiteObj, durations: var openarray[float],
       bc = getBegCycles()
       body
       ec = getEndCyclesNoRdtscp()
+    if ec < bc:
+      ok = false
+      if DBG(bmso): echo "measure: BAD ec:" & $ec & " < bc:" & $bc
+      break
     var adjDuration = float(ec - bc) - bmso.overhead
     if adjDuration < 0: adjDuration = 0
     durations[i] = adjDuration
-    if DBGV(bmso.verbosity):
-      echo "duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
+    if DBGV(bmso):
+      echo "measure:  duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
         float(bc)
     if tscAuxInitial != tscAuxNow:
       # Switched CPU we can't trust duration
-      if NRM(bmso.verbosity):
-        echo "bad tscAuxNow=0x", toHex(tscAuxNow, 4), " != tscAuxInitial=0x",
-          toHex(tscAuxInitial, 4)
+      if DBG(bmso):
+        echo "measure:  BAD tscAuxNow=", tscAuxNow, " != tscAuxInitial=", tscAuxInitial
       ok = false;
       break
   if ok:
     sort(durations, system.cmp[float])
     for i in 0..bmsArray.len-1:
       bmsArray[i].push(durations[i])
+  if DBGV(bmso): echo "measure:- ok=", $ok
   ok
 
 template measureSecs(bmso: BmSuiteObj, seconds: float,
     bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  if DBG(bmso.verbosity): echo "measureSecs: seconds=", seconds
+  if DBGV(bmso): echo "measureSecs:+ seconds=", seconds
 
   var
     durations = newSeq[float](bmsArray.len)
@@ -517,21 +575,25 @@ template measureSecs(bmso: BmSuiteObj, seconds: float,
   # the current cycles per second.
   while runDuration > cur - start:
     if not measure(bmso, durations, bmsArray, body):
-      if DBG(bmso.verbosity): echo "echo measureSecs: bad measurement"
+      if DBGV(bmso): echo "echo measureSecs: BAD measurement"
     cur = epochTime()
+
+  if DBGV(bmso): echo "measureSecs:-"
 
 template measureLoops(bmso: BmSuiteObj, loopCount: int,
     bmsArray: var openarray[BmStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of BmStats for the loop timings. If
-  if DBG(bmso.verbosity): echo "measureLoops: loopCount=", loopCount
+  if DBGV(bmso): echo "measureLoops: loopCount=", loopCount
 
   var
     durations = newSeq[float](bmsArray.len)
 
   for i in 0..loopCount-1:
     if not measure(bmso, durations, bmsArray, body):
-      if DBG(bmso.verbosity): echo "echo measureLoops: bad measurement"
+      if DBGV(bmso): echo "echo measureLoops: BAD measurement"
+
+  if DBGV(bmso): echo "measureLoops:-"
 
 proc secToStr*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
@@ -576,7 +638,7 @@ proc bmEchoResults*(bmso: BmSuiteObj,
     var s = bmso.fullName & ":"
     if bmsArray.len > 1:
       bmsArrayIdxStr = "[" & $idx & "]"
-    if NRM(bmso.verbosity):
+    if NRML(bmso):
       s &= " bms" & bmsArrayIdxStr & "=" &
           "{min=" & cyclesToStr(bmso, bms.min) &
           " mean=" & cyclesToStr(bmso, bms.mean) &
@@ -592,7 +654,9 @@ proc bmWarmupCpu*(bmso: BmSuiteObj, seconds: float) =
   var
     bmsa: array[0..0, BmStats]
     v: int
+  if DBGV(bmso): echo "bmWarmupCup:+"
   measureSecs(bmso, seconds, bmsa, inc(v))
+  if DBGV(bmso): echo "bmWarmupCup:-"
 
 template suite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
@@ -608,27 +672,29 @@ template suite*(nameSuite: string, warmupSeconds: float,
   ##  template teardown*(teardownBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmTime or bmLoop
   ##::
-  ##  template bmLoop*(nameRun: string, loopCount: int,
+  ##  template test*(nameRun: string, loopCount: int,
   ##                   bmsArray: var openarray[BmStats],
   ##                   testBody: stmt): stmt {.dirty.} =
   ##    ## Run the testBody loopCount * bmsArray.len times. Upon termination
   ##    ## bmsArray contains the results.
-  ##  template bmLoop*(nameRun: string, loopCount: int,
+  ##::
+  ##  template test*(nameRun: string, loopCount: int,
   ##                   bms: var BmStats,
   ##                   testBody: stmt): stmt {.dirty.} =
   ##    ## Run the testBody loopCount times. Upon termination bms
   ##    ## contains the result.
   ##::
-  ##  template bmTime*(nameRun: string, seconds: float,
+  ##  template test*(nameRun: string, seconds: float,
   ##                   bmsArray: var openarray[BmStats],
-  ##                   timeBody: stmt): stmt {.dirty.} =
-  ##    ## Run the timeBody in a loop for seconds and the number of loops will be
+  ##                   testBody: stmt): stmt {.dirty.} =
+  ##    ## Run the testBody in a loop for seconds and the number of loops will be
   ##    ## modulo the length of bmsArray. Upon termination bmsArray contiains
   ##    ## the results.
-  ##  template bmTime*(nameRun: string, seconds: float,
+  ##::
+  ##  template test*(nameRun: string, seconds: float,
   ##                   bms: var BmStats,
-  ##                   timeBody: stmt): stmt {.dirty.} =
-  ##    ## Run the timeBody in a loop for seconds and the number of loops will be
+  ##                   testBody: stmt): stmt {.dirty.} =
+  ##    ## Run the testBody in a loop for seconds and the number of loops will be
   ##    ## modulo the length of bmsArray with bms containing the results.
   block:
     var
@@ -638,10 +704,10 @@ template suite*(nameSuite: string, warmupSeconds: float,
     # Initialize bmso
     bmso.suiteName = nameSuite
     bmso.overhead = 0
+    bmso.verbosity = bmDefaultVerbosity
     bmso.hasRDTSCP = hasRDTSCP()
     bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
     bmso.cyclesPerSec = cyclesPerSecond(bmso)
-    echo "hasRDTSCP=", bmso.hasRDTSCP
 
     # Warmup the CPU
     bmWarmupCpu(bmso, warmupSeconds)
@@ -649,7 +715,8 @@ template suite*(nameSuite: string, warmupSeconds: float,
     # Measure overhead
     measureSecs(bmso, 0.25, bmsa, (discard))
     bmso.overhead = bmsa[0].min
-    if DBG(bmso.verbosity): echo "bmso.overhead=", bmso.overhead, " bms=", $bmsa[0]
+    if DBGV(bmso): echo "bmso", bmso
+
 
     # The implementation of setup/teardown when invoked by bmTime
     template setupImpl*: stmt = discard
@@ -677,7 +744,7 @@ template suite*(nameSuite: string, warmupSeconds: float,
           setupImpl()
           measureLoops(bmso, loopCount, bmsArray, testBody)
         except:
-          if NRM(bmso.verbosity):
+          if NRML(bmso):
             echo "bmLoop ", bmso.fullName &
               ": exception=", getCurrentExceptionMsg()
         finally:
@@ -696,8 +763,8 @@ template suite*(nameSuite: string, warmupSeconds: float,
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test*(nameRun: string, seconds: float,
-        bmsArray: var openarray[BmStats], timeBody: stmt): stmt {.dirty.} =
-      ## Run the timeBody in a loop for seconds and the number of loops will be
+        bmsArray: var openarray[BmStats], testBody: stmt): stmt {.dirty.} =
+      ## Run the testBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray. Upon termination bmsArray contiains
       ## the results.
       block:
@@ -706,24 +773,24 @@ template suite*(nameSuite: string, warmupSeconds: float,
           bmso.fullName = bmso.suiteName & "." & bmso.testName
           bmsArray.zero()
           setupImpl()
-          measureSecs(bmso, seconds, bmsArray, timeBody)
+          measureSecs(bmso, seconds, bmsArray, testBody)
         except:
-          if NRM(bmso.verbosity):
+          if NRML(bmso):
             echo "bmTime ", bmso.fullName,
               ": exception=", getCurrentExceptionMsg()
         finally:
           teardownImpl()
-          if NRM(bmso.verbosity):
+          if NRML(bmso):
             bmEchoResults(bmso, bmsArray)
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test*(nameRun: string, seconds: float, bms: var BmStats,
-        timeBody: stmt): stmt {.dirty.} =
-      ## Run the timeBody in a loop for seconds and the number of loops will be
+        testBody: stmt): stmt {.dirty.} =
+      ## Run the testBody in a loop for seconds and the number of loops will be
       ## modulo the length of bmsArray with bms containing the results.
       block:
         var bmsArray: array[0..0, BmStats]
-        test(nameRun, seconds, bmsArray, timeBody)
+        test(nameRun, seconds, bmsArray, testBody)
         bms = bmsArray[0]
 
     # Instanitate the suite body
@@ -862,7 +929,7 @@ when isMainModule:
           setupCalled += 1
 
         teardown:
-          bmso.verbosity = Verbosity.dbg
+          bmso.verbosity = Verbosity.debug
           teardownCalled += 1
 
         test "atomicInc 2 secs", 2.0, bms:
