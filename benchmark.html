@@ -1164,23 +1164,23 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   normal = 1,                 ## Normal outout at end of run
   debug = 2,                  ## Additional debug output
   verbose = 3                 ## Copious output"><wbr />Verbosity</a></li>
-  <li><a class="reference" href="#BmSuiteObj"
-    title="BmSuiteObj* = object 
+  <li><a class="reference" href="#SuiteObj"
+    title="SuiteObj* = object 
   suiteName: string           ## Name of the suite
-  testName: string            ## Name of the current run
+  testName: string            ## Name of the current test
   fullName: string            ## Suite and Runame concatonated
   cyclesPerSec: float         ## Frequency of cycle counter
   cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
   verbosity: Verbosity        ## Verbosity of output
   overhead: float             ## Number of cycles overhead to be substracted when measuring
-  hasRDTSCP: bool             ## True if the cpu has RDTSCP instruction"><wbr />Bm<wbr />Suite<wbr />Obj</a></li>
-  <li><a class="reference" href="#BmStats"
-    title="BmStats* = object 
+  hasRDTSCP: bool             ## True if the cpu has RDTSCP instruction"><wbr />Suite<wbr />Obj</a></li>
+  <li><a class="reference" href="#TestStats"
+    title="TestStats* = object 
   n*: int                     ## number of data points
   minC*: int                  ## number of data points == min
   maxC*: int                  ## number of data points == max
   sum*, min*, max*, mean*: float ## self-explaining
-  oldM, oldS, newS: float"><wbr />Bm<wbr />Stats</a></li>
+  oldM, oldS, newS: float"><wbr />Test<wbr />Stats</a></li>
   <li><a class="reference" href="#CpuId"
     title="CpuId* = tuple[eax: int, ebx: int, ecx: int, edx: int]"><wbr />Cpu<wbr />Id</a></li>
 
@@ -1205,46 +1205,46 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
     title="DBG*(verbosity: Verbosity): bool"><wbr />DBG</a></li>
   <li><a class="reference" href="#DBGV,Verbosity"
     title="DBGV*(verbosity: Verbosity): bool"><wbr />DBGV</a></li>
-  <li><a class="reference" href="#NONE,BmSuiteObj"
-    title="NONE*(bmso: BmSuiteObj): bool"><wbr />NONE</a></li>
-  <li><a class="reference" href="#NRML,BmSuiteObj"
-    title="NRML*(bmso: BmSuiteObj): bool"><wbr />NRML</a></li>
-  <li><a class="reference" href="#DBG,BmSuiteObj"
-    title="DBG*(bmso: BmSuiteObj): bool"><wbr />DBG</a></li>
-  <li><a class="reference" href="#DBGV,BmSuiteObj"
-    title="DBGV*(bmso: BmSuiteObj): bool"><wbr />DBGV</a></li>
+  <li><a class="reference" href="#NONE,SuiteObj"
+    title="NONE*(suiteObj: SuiteObj): bool"><wbr />NONE</a></li>
+  <li><a class="reference" href="#NRML,SuiteObj"
+    title="NRML*(suiteObj: SuiteObj): bool"><wbr />NRML</a></li>
+  <li><a class="reference" href="#DBG,SuiteObj"
+    title="DBG*(suiteObj: SuiteObj): bool"><wbr />DBG</a></li>
+  <li><a class="reference" href="#DBGV,SuiteObj"
+    title="DBGV*(suiteObj: SuiteObj): bool"><wbr />DBGV</a></li>
   <li><a class="reference" href="#secToStr,float"
     title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float"
-    title="cyclesToStr*(bmso: BmSuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#$,BmSuiteObj"
-    title="`$`*(bmso: BmSuiteObj): string">`<wbr />$`</a></li>
-  <li><a class="reference" href="#$,BmStats"
-    title="`$`*(s: BmStats): string">`<wbr />$`</a></li>
-  <li><a class="reference" href="#zero,BmStats"
-    title="zero*(bms: var BmStats)"><wbr />zero</a></li>
-  <li><a class="reference" href="#zero,openarray[BmStats]"
-    title="zero*(bmsArray: var openarray[BmStats])"><wbr />zero</a></li>
-  <li><a class="reference" href="#push,BmStats,float"
-    title="push*(s: var BmStats; x: float)"><wbr />push</a></li>
-  <li><a class="reference" href="#push,BmStats,int"
-    title="push*(s: var BmStats; x: int)"><wbr />push</a></li>
-  <li><a class="reference" href="#variance,BmStats"
-    title="variance*(s: BmStats): float"><wbr />variance</a></li>
-  <li><a class="reference" href="#standardDeviation,BmStats"
-    title="standardDeviation*(s: BmStats): float"><wbr />standard<wbr />Deviation</a></li>
-  <li><a class="reference" href="#cyclesPerSecond,BmSuiteObj,float"
-    title="cyclesPerSecond*(bmso: BmSuiteObj; seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
+  <li><a class="reference" href="#cyclesToStr,SuiteObj,float"
+    title="cyclesToStr*(suiteObj: SuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
+  <li><a class="reference" href="#$,SuiteObj"
+    title="`$`*(suiteObj: SuiteObj): string">`<wbr />$`</a></li>
+  <li><a class="reference" href="#$,TestStats"
+    title="`$`*(s: TestStats): string">`<wbr />$`</a></li>
+  <li><a class="reference" href="#zero,TestStats"
+    title="zero*(ts: var TestStats)"><wbr />zero</a></li>
+  <li><a class="reference" href="#zero,openarray[TestStats]"
+    title="zero*(tsArray: var openarray[TestStats])"><wbr />zero</a></li>
+  <li><a class="reference" href="#push,TestStats,float"
+    title="push*(s: var TestStats; x: float)"><wbr />push</a></li>
+  <li><a class="reference" href="#push,TestStats,int"
+    title="push*(s: var TestStats; x: int)"><wbr />push</a></li>
+  <li><a class="reference" href="#variance,TestStats"
+    title="variance*(s: TestStats): float"><wbr />variance</a></li>
+  <li><a class="reference" href="#standardDeviation,TestStats"
+    title="standardDeviation*(s: TestStats): float"><wbr />standard<wbr />Deviation</a></li>
+  <li><a class="reference" href="#cyclesPerSecond,SuiteObj,float"
+    title="cyclesPerSecond*(suiteObj: SuiteObj; seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
   <li><a class="reference" href="#secToStr,float_2"
     title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#cyclesToStr,BmSuiteObj,float_2"
-    title="cyclesToStr*(bmso: BmSuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#bmStatsToStr,BmSuiteObj,BmStats"
-    title="bmStatsToStr*(bmso: BmSuiteObj; s: BmStats): string"><wbr />bm<wbr />Stats<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#bmEchoResults,BmSuiteObj,openarray[BmStats]"
-    title="bmEchoResults*(bmso: BmSuiteObj; bmsArray: openarray[BmStats])"><wbr />bm<wbr />Echo<wbr />Results</a></li>
-  <li><a class="reference" href="#bmWarmupCpu,BmSuiteObj,float"
-    title="bmWarmupCpu*(bmso: BmSuiteObj; seconds: float)"><wbr />bm<wbr />Warmup<wbr />Cpu</a></li>
+  <li><a class="reference" href="#cyclesToStr,SuiteObj,float_2"
+    title="cyclesToStr*(suiteObj: SuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
+  <li><a class="reference" href="#bmStatsToStr,SuiteObj,TestStats"
+    title="bmStatsToStr*(suiteObj: SuiteObj; s: TestStats): string"><wbr />bm<wbr />Stats<wbr />To<wbr />Str</a></li>
+  <li><a class="reference" href="#bmEchoResults,SuiteObj,openarray[TestStats]"
+    title="bmEchoResults*(suiteObj: SuiteObj; tsArray: openarray[TestStats])"><wbr />bm<wbr />Echo<wbr />Results</a></li>
+  <li><a class="reference" href="#bmWarmupCpu,SuiteObj,float"
+    title="bmWarmupCpu*(suiteObj: SuiteObj; seconds: float)"><wbr />bm<wbr />Warmup<wbr />Cpu</a></li>
 
   </ul>
 </li>
@@ -1261,23 +1261,23 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
 
   </div>
   <div class="nine columns" id="content">
-  <p class="module-desc"><p>Benchmark will measure the duration it takes for some arbitrary code to excute in the body of the test templates and returns the information for the runs in BmStats var parameter.</p>
-<p>There are  versions of the test templates you can specify the number of loops or how long to execute the body. In addition you can specify a single BmStats var parameter or a set of them in an array. Also, if a loop count is specified and N BmStats are passed in then the body will be executed loop count * N time.</p>
-<p>As mentioned the number of statistic buckets is defined by the BmStats parameter. The duration of the sub runs are sorted from fastest to slowest and pushed into the corresponding BmStats entry. An array gives you a beter overview of the spread of the performance as it's very difficult to get consistent data on modern computers where there is a lot of contention for resources. Such as interrupts, mutliple cores both logical and physical, multiple threads, migration of threads to different cores, the list is endless.</p>
-<p>The measurements are taken each loop and is measured in cycles as defined by the CPU. On an X86 the RDTSC instruction is used to read the value and the routine cyclesPerSecond will return the approximate frequency. The cycle values displayed will be in cycles &quot;cy&quot; if the number of cycles is less-than BmSuiteObj.cyclesToSecThreshold or time (&quot;s&quot;, &quot;ms&quot;, ## &quot;us&quot;, &quot;ps&quot;) if greater-than.</p>
+  <p class="module-desc"><p>Benchmark will measure the duration it takes for some arbitrary code to excute in the body of the test templates and returns the information for the runs in TestStats var parameter.</p>
+<p>There are  versions of the test templates you can specify the number of loops or how long to execute the body. In addition you can specify a single TestStats var parameter or a set of them in an array. Also, if a loop count is specified and N TestStats are passed in then the body will be executed loop count * N time.</p>
+<p>As mentioned the number of statistic buckets is defined by the TestStats parameter. The duration of the sub runs are sorted from fastest to slowest and pushed into the corresponding TestStats entry. An array gives you a beter overview of the spread of the performance as it's very difficult to get consistent data on modern computers where there is a lot of contention for resources. Such as interrupts, mutliple cores both logical and physical, multiple threads, migration of threads to different cores, the list is endless.</p>
+<p>The measurements are taken each loop and is measured in cycles as defined by the CPU. On an X86 the RDTSC instruction is used to read the value and the routine cyclesPerSecond will return the approximate frequency. The cycle values displayed will be in cycles &quot;cy&quot; if the number of cycles is less-than SuiteObj.cyclesToSecThreshold or time (&quot;s&quot;, &quot;ms&quot;, ## &quot;us&quot;, &quot;ps&quot;) if greater-than.</p>
 <p>Example use with exmpl/bminc.nim</p>
 <pre>$ cat examples/bminc.nim
 import benchmark
 
 bmSuite &quot;increment&quot;, 0.0:
   var
-    bms: BmStats
+    ts: TestStats
     loops = 0
   
-  bmTime &quot;inc&quot;, 0.5, bms:
+  bmTime &quot;inc&quot;, 0.5, ts:
     inc(loops)
   
-  bmTime &quot;atomicInc&quot;, 0.5, bms:
+  bmTime &quot;atomicInc&quot;, 0.5, ts:
     atomicInc(loops)</pre>
 And then compiling and running we see some odd data. The atomicInc(loops) is faster, 48cy, then inc(loops) which is unexpected. Also minC was only 1 which means that for the 400,000+ executions of the inc(loops) and atomicInc(loops) only 1 was at min value, 50cy or 48cy respectively. This doesn't give you a lot confidence in the data.<pre>$ nim c --hints:off exmpl/bminc.nim
 CC: benchmark_bminc2
@@ -1292,34 +1292,34 @@ CC: stdlib_os
 CC: stdlib_posix
 [Linking]
 $ exmpl/bminc
-increment.inc: bms={min=50cy mean=78cy minC=1 n=452276}
-increment.atomicInc: bms={min=48cy mean=81cy minC=1 n=431060}</pre>
-So lets make two changes to the code we'll change the warmup time for bmSuite from 0.0 to 1.0 second. And we'll change bms to an array of 5 BmStats rather than just one.<pre>$ cat exmpl/bminc2.nim
+increment.inc: ts={min=50cy mean=78cy minC=1 n=452276}
+increment.atomicInc: ts={min=48cy mean=81cy minC=1 n=431060}</pre>
+So lets make two changes to the code we'll change the warmup time for bmSuite from 0.0 to 1.0 second. And we'll change ts to an array of 5 TestStats rather than just one.<pre>$ cat exmpl/bminc2.nim
 bmSuite &quot;increment&quot;, 1.0:
   var
-    bms: array[0..4, BmStats]
+    ts: array[0..4, TestStats]
     loops = 0
   
-  bmTime &quot;inc&quot;, 0.5, bms:
+  bmTime &quot;inc&quot;, 0.5, ts:
     inc(loops)
   
-  bmTime &quot;atomicInc&quot;, 0.5, bms:
+  bmTime &quot;atomicInc&quot;, 0.5, ts:
     atomicInc(loops)</pre>
 With these change we still see the atomicInc being faster but we also see min ranging from 50cy to 68cy and the mean 75cy to 91cy giving us a better idea of the range of data. But we still have this oddity of atomicInc being faster than inc.<pre>$ nim c --hints:off exmpl/bminc.nim
 CC: benchmark_bminc2
 $ exmpl/bminc2
 [Linking]
 $ exmpl/bminc2
-increment.inc: bms[0]={min=50cy mean=74cy minC=2 n=169482}
-increment.inc: bms[1]={min=52cy mean=78cy minC=45 n=169482}
-increment.inc: bms[2]={min=52cy mean=80cy minC=1 n=169482}
-increment.inc: bms[3]={min=56cy mean=81cy minC=10 n=169482}
-increment.inc: bms[4]={min=68cy mean=91cy minC=76 n=169482}
-increment.atomicInc: bms[0]={min=48cy mean=71cy minC=2 n=175137}
-increment.atomicInc: bms[1]={min=52cy mean=73cy minC=61 n=175137}
-increment.atomicInc: bms[2]={min=52cy mean=76cy minC=3 n=175137}
-increment.atomicInc: bms[3]={min=54cy mean=78cy minC=1 n=175137}
-increment.atomicInc: bms[4]={min=68cy mean=84cy minC=3780 n=175137}# </pre>
+increment.inc: ts[0]={min=50cy mean=74cy minC=2 n=169482}
+increment.inc: ts[1]={min=52cy mean=78cy minC=45 n=169482}
+increment.inc: ts[2]={min=52cy mean=80cy minC=1 n=169482}
+increment.inc: ts[3]={min=56cy mean=81cy minC=10 n=169482}
+increment.inc: ts[4]={min=68cy mean=91cy minC=76 n=169482}
+increment.atomicInc: ts[0]={min=48cy mean=71cy minC=2 n=175137}
+increment.atomicInc: ts[1]={min=52cy mean=73cy minC=61 n=175137}
+increment.atomicInc: ts[2]={min=52cy mean=76cy minC=3 n=175137}
+increment.atomicInc: ts[3]={min=54cy mean=78cy minC=1 n=175137}
+increment.atomicInc: ts[4]={min=68cy mean=84cy minC=3780 n=175137}</pre>
 Lets turn on threading and see what happens maybe that will make a difference. And sure enough we now see that inc is faster than atomic but the performance slowed down to 138cy instead of 50cy. So turning on threading can hurt performance at least in this configuration.<pre>$ nim c --threads:on --hints:off exmpl/bminc2.nim
 CC: benchmark_bminc2
 CC: stdlib_system
@@ -1333,16 +1333,16 @@ CC: stdlib_os
 CC: stdlib_posix
 [Linking]
 $ exmpl/bminc2
-increment.inc: bms[0]={min=138cy mean=164cy minC=2 n=116542}
-increment.inc: bms[1]={min=146cy mean=165cy minC=26 n=116542}
-increment.inc: bms[2]={min=148cy mean=167cy minC=48 n=116542}
-increment.inc: bms[3]={min=150cy mean=170cy minC=2 n=116542}
-increment.inc: bms[4]={min=152cy mean=183cy minC=1 n=116542}
-increment.atomicInc: bms[0]={min=150cy mean=177cy minC=1 n=115241}
-increment.atomicInc: bms[1]={min=158cy mean=180cy minC=37 n=115241}
-increment.atomicInc: bms[2]={min=158cy mean=183cy minC=1 n=115241}
-increment.atomicInc: bms[3]={min=160cy mean=185cy minC=1 n=115241}
-increment.atomicInc: bms[4]={min=170cy mean=194cy minC=254 n=115241}</pre>
+increment.inc: ts[0]={min=138cy mean=164cy minC=2 n=116542}
+increment.inc: ts[1]={min=146cy mean=165cy minC=26 n=116542}
+increment.inc: ts[2]={min=148cy mean=167cy minC=48 n=116542}
+increment.inc: ts[3]={min=150cy mean=170cy minC=2 n=116542}
+increment.inc: ts[4]={min=152cy mean=183cy minC=1 n=116542}
+increment.atomicInc: ts[0]={min=150cy mean=177cy minC=1 n=115241}
+increment.atomicInc: ts[1]={min=158cy mean=180cy minC=37 n=115241}
+increment.atomicInc: ts[2]={min=158cy mean=183cy minC=1 n=115241}
+increment.atomicInc: ts[3]={min=160cy mean=185cy minC=1 n=115241}
+increment.atomicInc: ts[4]={min=170cy mean=194cy minC=254 n=115241}</pre>
 Lets make one final change lets make this a release build. What a huge difference the cycles is now 16cy for inc and 26cy for atomicInc and we see that  minC is not a miniscule number so we have a very high confidence that in a release build even with threading enabled an inc takes 16cy and atomicInc is 26cy.<pre>$ nim c -d:release --threads:on --hints:off exmpl/bminc2.nim
 CC: benchmark_bminc2
 CC: stdlib_system
@@ -1356,16 +1356,16 @@ CC: stdlib_os
 CC: stdlib_posix
 [Linking]
 $ exmpl/bmrun2
-increment.inc: bms[0]={min=16cy mean=18cy minC=314358 n=390304}
-increment.inc: bms[1]={min=16cy mean=20cy minC=256916 n=390304}
-increment.inc: bms[2]={min=16cy mean=22cy minC=151829 n=390304}
-increment.inc: bms[3]={min=16cy mean=27cy minC=65869 n=390304}
-increment.inc: bms[4]={min=16cy mean=30cy minC=16848 n=390304}
-increment.atomicInc: bms[0]={min=26cy mean=31cy minC=116704 n=355885}
-increment.atomicInc: bms[1]={min=26cy mean=37cy minC=12701 n=355885}
-increment.atomicInc: bms[2]={min=26cy mean=42cy minC=986 n=355885}
-increment.atomicInc: bms[3]={min=26cy mean=44cy minC=2 n=355885}
-increment.atomicInc: bms[4]={min=28cy mean=48cy minC=2733 n=355885}</pre>
+increment.inc: ts[0]={min=16cy mean=18cy minC=314358 n=390304}
+increment.inc: ts[1]={min=16cy mean=20cy minC=256916 n=390304}
+increment.inc: ts[2]={min=16cy mean=22cy minC=151829 n=390304}
+increment.inc: ts[3]={min=16cy mean=27cy minC=65869 n=390304}
+increment.inc: ts[4]={min=16cy mean=30cy minC=16848 n=390304}
+increment.atomicInc: ts[0]={min=26cy mean=31cy minC=116704 n=355885}
+increment.atomicInc: ts[1]={min=26cy mean=37cy minC=12701 n=355885}
+increment.atomicInc: ts[2]={min=26cy mean=42cy minC=986 n=355885}
+increment.atomicInc: ts[3]={min=26cy mean=44cy minC=2 n=355885}
+increment.atomicInc: ts[4]={min=28cy mean=48cy minC=2733 n=355885}</pre>
 </p>
   <div class="section" id="6">
 <h1><a class="toc-backref" href="#6">Imports</a></h1>
@@ -1384,9 +1384,9 @@ increment.atomicInc: bms[4]={min=28cy mean=48cy minC=2733 n=355885}</pre>
 Logging verbosity
 
 </dd>
-<dt id="BmSuiteObj"><a name="BmSuiteObj"></a><pre><span class="Identifier">BmSuiteObj</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
+<dt id="SuiteObj"><a name="SuiteObj"></a><pre><span class="Identifier">SuiteObj</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
   <span class="Identifier">suiteName</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Name of the suite</span>
-  <span class="Identifier">testName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Name of the current run</span>
+  <span class="Identifier">testName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Name of the current test</span>
   <span class="Identifier">fullName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Suite and Runame concatonated</span>
   <span class="Identifier">cyclesPerSec</span><span class="Other">:</span> <span class="Identifier">float</span>         <span class="Comment">## Frequency of cycle counter</span>
   <span class="Identifier">cyclesToSecThreshold</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
@@ -1398,7 +1398,7 @@ Logging verbosity
 Object associated with a bmSuite
 
 </dd>
-<dt id="BmStats"><a name="BmStats"></a><pre><span class="Identifier">BmStats</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
+<dt id="TestStats"><a name="TestStats"></a><pre><span class="Identifier">TestStats</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
   <span class="Identifier">n</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>                     <span class="Comment">## number of data points</span>
   <span class="Identifier">minC</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>                  <span class="Comment">## number of data points == min</span>
   <span class="Identifier">maxC</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>                  <span class="Comment">## number of data points == max</span>
@@ -1406,7 +1406,7 @@ Object associated with a bmSuite
   <span class="Identifier">oldM</span><span class="Other">,</span> <span class="Identifier">oldS</span><span class="Other">,</span> <span class="Identifier">newS</span><span class="Other">:</span> <span class="Identifier">float</span>
 </pre></dt>
 <dd>
-Statistical benchmark data
+A test run's statistical data
 
 </dd>
 <dt id="CpuId"><a name="CpuId"></a><pre><span class="Identifier">CpuId</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">eax</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">,</span> <span class="Identifier">ebx</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">,</span> <span class="Identifier">ecx</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">,</span> <span class="Identifier">edx</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">]</span></pre></dt>
@@ -1449,24 +1449,24 @@ Return true if verbosity &gt;= Verbosity.debug
 Return true if verbosity &gt;= Verbosity.verbose
 
 </dd>
-<dt id="NONE"><a name="NONE,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NONE</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dt id="NONE"><a name="NONE,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NONE</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if bmso.verbosity == Verbosity.none
+Return true if suiteObj.verbosity == Verbosity.none
 
 </dd>
-<dt id="NRML"><a name="NRML,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NRML</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dt id="NRML"><a name="NRML,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">NRML</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
 Return true if bsmo.verbosity &gt;= Verbosity.normal
 
 </dd>
-<dt id="DBG"><a name="DBG,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBG</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dt id="DBG"><a name="DBG,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBG</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if bmso.verbosity &gt;= Verbosity.debug
+Return true if suiteObj.verbosity &gt;= Verbosity.debug
 
 </dd>
-<dt id="DBGV"><a name="DBGV,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBGV</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
+<dt id="DBGV"><a name="DBGV,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Identifier">DBGV</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">{.</span><span class="Identifier">inline</span><span class="Other">.}</span></pre></dt>
 <dd>
-Return true if bmso.verbosity &gt;= Verbosity.verbose
+Return true if suiteObj.verbosity &gt;= Verbosity.verbose
 
 </dd>
 <dt id="secToStr"><a name="secToStr,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
@@ -1474,52 +1474,52 @@ Return true if bmso.verbosity &gt;= Verbosity.verbose
 
 
 </dd>
-<dt id="cyclesToStr"><a name="cyclesToStr,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="cyclesToStr"><a name="cyclesToStr,SuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
 
 
 </dd>
-<dt id="$"><a name="$,BmSuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="$"><a name="$,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
 
 
 </dd>
-<dt id="$"><a name="$,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">BmStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="$"><a name="$,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">TestStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
-Print the BmStats.
+Print the TestStats.
 
 </dd>
-<dt id="zero"><a name="zero,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">zero</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bms</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">BmStats</span><span class="Other">)</span></pre></dt>
+<dt id="zero"><a name="zero,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">zero</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">ts</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">TestStats</span><span class="Other">)</span></pre></dt>
 <dd>
-Zero BmStats fields
+Zero TestStats fields
 
 </dd>
-<dt id="zero"><a name="zero,openarray[BmStats]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">zero</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmsArray</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">BmStats</span><span class="Other">]</span><span class="Other">)</span></pre></dt>
+<dt id="zero"><a name="zero,openarray[TestStats]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">zero</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">tsArray</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">TestStats</span><span class="Other">]</span><span class="Other">)</span></pre></dt>
 <dd>
-Zero an array of BmStats
+Zero an array of TestStats
 
 </dd>
-<dt id="push"><a name="push,BmStats,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">push</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">BmStats</span><span class="Other">;</span> <span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span></pre></dt>
+<dt id="push"><a name="push,TestStats,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">push</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">TestStats</span><span class="Other">;</span> <span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span></pre></dt>
 <dd>
 Pushes a value <cite>x</cite> for processing
 
 </dd>
-<dt id="push"><a name="push,BmStats,int"></a><pre><span class="Keyword">proc</span> <span class="Identifier">push</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">BmStats</span><span class="Other">;</span> <span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span></pre></dt>
+<dt id="push"><a name="push,TestStats,int"></a><pre><span class="Keyword">proc</span> <span class="Identifier">push</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">TestStats</span><span class="Other">;</span> <span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span></pre></dt>
 <dd>
 Pushes a value <cite>x</cite> for processing. <cite>x</cite> is simply converted to <tt class="docutils literal"><span class="pre">float</span></tt> and the other push operation is called.
 
 </dd>
-<dt id="variance"><a name="variance,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">variance</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">BmStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
+<dt id="variance"><a name="variance,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">variance</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">TestStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
 <dd>
 Computes the current variance of <cite>s</cite>
 
 </dd>
-<dt id="standardDeviation"><a name="standardDeviation,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">standardDeviation</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">BmStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
+<dt id="standardDeviation"><a name="standardDeviation,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">standardDeviation</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">TestStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
 <dd>
 Computes the current standard deviation of <cite>s</cite>
 
 </dd>
-<dt id="cyclesPerSecond"><a name="cyclesPerSecond,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesPerSecond</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Other">=</span> <span class="Identifier">DEFAULT_CPS_RUNTIME</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
+<dt id="cyclesPerSecond"><a name="cyclesPerSecond,SuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesPerSecond</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Other">=</span> <span class="Identifier">DEFAULT_CPS_RUNTIME</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
 <dd>
 Determine the approximate cycles per second of the TSC. The seconds parameter is the length of the meausrement. return a value &lt; 0.0 if unsuccessful. This happens if the code detects if the thread migrated cpu's.
 
@@ -1529,22 +1529,22 @@ Determine the approximate cycles per second of the TSC. The seconds parameter is
 Convert seconds to string with suffix if possible
 
 </dd>
-<dt id="cyclesToStr"><a name="cyclesToStr,BmSuiteObj,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="cyclesToStr"><a name="cyclesToStr,SuiteObj,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
-Convert cycles to string either as cycles or time depending upon bmso.cyclesToSecThreshold
+Convert cycles to string either as cycles or time depending upon suiteObj.cyclesToSecThreshold
 
 </dd>
-<dt id="bmStatsToStr"><a name="bmStatsToStr,BmSuiteObj,BmStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmStatsToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">BmStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
+<dt id="bmStatsToStr"><a name="bmStatsToStr,SuiteObj,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmStatsToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">TestStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
-Print the BmStats using cycles per second.
+Print the TestStats using cycles per second.
 
 </dd>
-<dt id="bmEchoResults"><a name="bmEchoResults,BmSuiteObj,openarray[BmStats]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmEchoResults</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">bmsArray</span><span class="Other">:</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">BmStats</span><span class="Other">]</span><span class="Other">)</span></pre></dt>
+<dt id="bmEchoResults"><a name="bmEchoResults,SuiteObj,openarray[TestStats]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmEchoResults</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">tsArray</span><span class="Other">:</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">TestStats</span><span class="Other">]</span><span class="Other">)</span></pre></dt>
 <dd>
 Echo to the console the results of a run. To override set verbosity = Verbosity.none and then write your own code in teardown.
 
 </dd>
-<dt id="bmWarmupCpu"><a name="bmWarmupCpu,BmSuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmWarmupCpu</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">bmso</span><span class="Other">:</span> <span class="Identifier">BmSuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span></pre></dt>
+<dt id="bmWarmupCpu"><a name="bmWarmupCpu,SuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmWarmupCpu</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span></pre></dt>
 <dd>
 Warmup the cpu so its running at its highest clock rate
 
@@ -1557,33 +1557,33 @@ Warmup the cpu so its running at its highest clock rate
 <dt id="suite"><a name="suite.t,string,float,stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">warmupSeconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span> <span class="Other">{.</span>
     <span class="Identifier">immediate</span><span class="Other">.}</span></pre></dt>
 <dd>
-Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmLoop.  which are detailed below:<pre>var bmso {.inject.}: BmSuiteObj
+Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmLoop.  which are detailed below:<pre>var suiteObj {.inject.}: SuiteObj
 ## Suite object</pre>
 <pre>template setup*(setupBody: stmt): stmt {.immediate.} =
   ## This is executed prior to each bmTime or bmLoop</pre>
 <pre>template teardown*(teardownBody: stmt): stmt {.immediate.} =
   ## This is executed after to each bmTime or bmLoop</pre>
-<pre>template test*(nameRun: string, loopCount: int,
-                 bmsArray: var openarray[BmStats],
+<pre>template test*(name string, loopCount: int,
+                 tsArray: var openarray[TestStats],
                  testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody loopCount * bmsArray.len times. Upon termination
-  ## bmsArray contains the results.</pre>
-<pre>template test*(nameRun: string, loopCount: int,
-                 bms: var BmStats,
+  ## Run the testBody loopCount * tsArray.len times. Upon termination
+  ## tsArray contains the results.</pre>
+<pre>template test*(name string, loopCount: int,
+                 ts: var TestStats,
                  testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody loopCount times. Upon termination bms
+  ## Run the testBody loopCount times. Upon termination ts
   ## contains the result.</pre>
-<pre>template test*(nameRun: string, seconds: float,
-                 bmsArray: var openarray[BmStats],
+<pre>template test*(name string, seconds: float,
+                 tsArray: var openarray[TestStats],
                  testBody: stmt): stmt {.dirty.} =
   ## Run the testBody in a loop for seconds and the number of loops will be
-  ## modulo the length of bmsArray. Upon termination bmsArray contiains
+  ## modulo the length of tsArray. Upon termination tsArray contiains
   ## the results.</pre>
-<pre>template test*(nameRun: string, seconds: float,
-                 bms: var BmStats,
+<pre>template test*(name string, seconds: float,
+                 ts: var TestStats,
                  testBody: stmt): stmt {.dirty.} =
   ## Run the testBody in a loop for seconds and the number of loops will be
-  ## modulo the length of bmsArray with bms containing the results.</pre>
+  ## modulo the length of tsArray with ts containing the results.</pre>
 
 
 </dd>
@@ -1597,7 +1597,7 @@ Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmL
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-02 22:33:01 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-04 09:25:18 UTC</small>
       </div>
     </div>
   </div>

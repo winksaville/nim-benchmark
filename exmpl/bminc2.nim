@@ -4,13 +4,13 @@ import benchmark
 
 suite "increment", 1.0:
   var
-    bms: array[0..9, BmStats]
+    ts: array[0..9, TestStats]
     loops = 0
 
-  echo "bmso=", bmso
+  echo "suiteObj=", suiteObj
 
-  test "inc", 0.5, bms:
+  test "inc", 0.5, ts:
     inc(loops)
 
-  test "atomicInc", 0.5, bms:
+  test "atomicInc", 0.5, ts:
     atomicInc(loops)

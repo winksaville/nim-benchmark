@@ -1,17 +1,17 @@
 ## Benchmark will measure the duration it takes for some arbitrary
 ## code to excute in the body of the test templates and returns
-## the information for the runs in BmStats var parameter.
+## the information for the runs in TestStats var parameter.
 ##
 ## There are  versions of the test templates you can specify
 ## the number of loops or how long to execute the body. In addition
-## you can specify a single BmStats var parameter or a set of them
-## in an array. Also, if a loop count is specified and N BmStats
+## you can specify a single TestStats var parameter or a set of them
+## in an array. Also, if a loop count is specified and N TestStats
 ## are passed in then the body will be executed loop count * N
 ## time.
 ## 
 ## As mentioned the number of statistic buckets is defined by the
-## BmStats parameter. The duration of the sub runs are sorted from
-## fastest to slowest and pushed into the corresponding BmStats entry.
+## TestStats parameter. The duration of the sub runs are sorted from
+## fastest to slowest and pushed into the corresponding TestStats entry.
 ## An array gives you a beter overview of the spread of the performance
 ## as it's very difficult to get consistent data on modern computers
 ## where there is a lot of contention for resources. Such as
@@ -22,7 +22,7 @@
 ## defined by the CPU. On an X86 the RDTSC instruction is used to read
 ## the value and the routine cyclesPerSecond will return the approximate
 ## frequency. The cycle values displayed will be in cycles "cy" if the
-## number of cycles is less-than BmSuiteObj.cyclesToSecThreshold or
+## number of cycles is less-than SuiteObj.cyclesToSecThreshold or
 ## time ("s", "ms", ## "us", "ps") if greater-than.
 ##
 ## Example use with exmpl/bminc.nim
@@ -32,13 +32,13 @@
 ## 
 ## bmSuite "increment", 0.0:
 ##   var
-##     bms: BmStats
+##     ts: TestStats
 ##     loops = 0
 ## 
-##   bmTime "inc", 0.5, bms:
+##   bmTime "inc", 0.5, ts:
 ##     inc(loops)
 ## 
-##   bmTime "atomicInc", 0.5, bms:
+##   bmTime "atomicInc", 0.5, ts:
 ##     atomicInc(loops)
 
 ## And then compiling and running we see some odd data. The
@@ -61,23 +61,23 @@
 ## CC: stdlib_posix
 ## [Linking]
 ## $ exmpl/bminc
-## increment.inc: bms={min=50cy mean=78cy minC=1 n=452276}
-## increment.atomicInc: bms={min=48cy mean=81cy minC=1 n=431060}
+## increment.inc: ts={min=50cy mean=78cy minC=1 n=452276}
+## increment.atomicInc: ts={min=48cy mean=81cy minC=1 n=431060}
 
 ## So lets make two changes to the code we'll change the warmup
 ## time for bmSuite from 0.0 to 1.0 second. And we'll change
-## bms to an array of 5 BmStats rather than just one.
+## ts to an array of 5 TestStats rather than just one.
 ##:: 
 ## $ cat exmpl/bminc2.nim
 ## bmSuite "increment", 1.0:
 ##   var
-##     bms: array[0..4, BmStats]
+##     ts: array[0..4, TestStats]
 ##     loops = 0
 ## 
-##   bmTime "inc", 0.5, bms:
+##   bmTime "inc", 0.5, ts:
 ##     inc(loops)
 ## 
-##   bmTime "atomicInc", 0.5, bms:
+##   bmTime "atomicInc", 0.5, ts:
 ##     atomicInc(loops)
 
 ## With these change we still see the atomicInc being faster
@@ -91,16 +91,16 @@
 ## $ exmpl/bminc2
 ## [Linking]
 ## $ exmpl/bminc2
-## increment.inc: bms[0]={min=50cy mean=74cy minC=2 n=169482}
-## increment.inc: bms[1]={min=52cy mean=78cy minC=45 n=169482}
-## increment.inc: bms[2]={min=52cy mean=80cy minC=1 n=169482}
-## increment.inc: bms[3]={min=56cy mean=81cy minC=10 n=169482}
-## increment.inc: bms[4]={min=68cy mean=91cy minC=76 n=169482}
-## increment.atomicInc: bms[0]={min=48cy mean=71cy minC=2 n=175137}
-## increment.atomicInc: bms[1]={min=52cy mean=73cy minC=61 n=175137}
-## increment.atomicInc: bms[2]={min=52cy mean=76cy minC=3 n=175137}
-## increment.atomicInc: bms[3]={min=54cy mean=78cy minC=1 n=175137}
-## increment.atomicInc: bms[4]={min=68cy mean=84cy minC=3780 n=175137}# 
+## increment.inc: ts[0]={min=50cy mean=74cy minC=2 n=169482}
+## increment.inc: ts[1]={min=52cy mean=78cy minC=45 n=169482}
+## increment.inc: ts[2]={min=52cy mean=80cy minC=1 n=169482}
+## increment.inc: ts[3]={min=56cy mean=81cy minC=10 n=169482}
+## increment.inc: ts[4]={min=68cy mean=91cy minC=76 n=169482}
+## increment.atomicInc: ts[0]={min=48cy mean=71cy minC=2 n=175137}
+## increment.atomicInc: ts[1]={min=52cy mean=73cy minC=61 n=175137}
+## increment.atomicInc: ts[2]={min=52cy mean=76cy minC=3 n=175137}
+## increment.atomicInc: ts[3]={min=54cy mean=78cy minC=1 n=175137}
+## increment.atomicInc: ts[4]={min=68cy mean=84cy minC=3780 n=175137}
 
 ## Lets turn on threading and see what happens maybe that will
 ## make a difference. And sure enough we now see that inc is
@@ -121,16 +121,16 @@
 ## CC: stdlib_posix
 ## [Linking]
 ## $ exmpl/bminc2
-## increment.inc: bms[0]={min=138cy mean=164cy minC=2 n=116542}
-## increment.inc: bms[1]={min=146cy mean=165cy minC=26 n=116542}
-## increment.inc: bms[2]={min=148cy mean=167cy minC=48 n=116542}
-## increment.inc: bms[3]={min=150cy mean=170cy minC=2 n=116542}
-## increment.inc: bms[4]={min=152cy mean=183cy minC=1 n=116542}
-## increment.atomicInc: bms[0]={min=150cy mean=177cy minC=1 n=115241}
-## increment.atomicInc: bms[1]={min=158cy mean=180cy minC=37 n=115241}
-## increment.atomicInc: bms[2]={min=158cy mean=183cy minC=1 n=115241}
-## increment.atomicInc: bms[3]={min=160cy mean=185cy minC=1 n=115241}
-## increment.atomicInc: bms[4]={min=170cy mean=194cy minC=254 n=115241}
+## increment.inc: ts[0]={min=138cy mean=164cy minC=2 n=116542}
+## increment.inc: ts[1]={min=146cy mean=165cy minC=26 n=116542}
+## increment.inc: ts[2]={min=148cy mean=167cy minC=48 n=116542}
+## increment.inc: ts[3]={min=150cy mean=170cy minC=2 n=116542}
+## increment.inc: ts[4]={min=152cy mean=183cy minC=1 n=116542}
+## increment.atomicInc: ts[0]={min=150cy mean=177cy minC=1 n=115241}
+## increment.atomicInc: ts[1]={min=158cy mean=180cy minC=37 n=115241}
+## increment.atomicInc: ts[2]={min=158cy mean=183cy minC=1 n=115241}
+## increment.atomicInc: ts[3]={min=160cy mean=185cy minC=1 n=115241}
+## increment.atomicInc: ts[4]={min=170cy mean=194cy minC=254 n=115241}
 
 ## Lets make one final change lets make this a release build. What
 ## a huge difference the cycles is now 16cy for inc and 26cy for
@@ -151,16 +151,16 @@
 ## CC: stdlib_posix
 ## [Linking]
 ## $ exmpl/bmrun2
-## increment.inc: bms[0]={min=16cy mean=18cy minC=314358 n=390304}
-## increment.inc: bms[1]={min=16cy mean=20cy minC=256916 n=390304}
-## increment.inc: bms[2]={min=16cy mean=22cy minC=151829 n=390304}
-## increment.inc: bms[3]={min=16cy mean=27cy minC=65869 n=390304}
-## increment.inc: bms[4]={min=16cy mean=30cy minC=16848 n=390304}
-## increment.atomicInc: bms[0]={min=26cy mean=31cy minC=116704 n=355885}
-## increment.atomicInc: bms[1]={min=26cy mean=37cy minC=12701 n=355885}
-## increment.atomicInc: bms[2]={min=26cy mean=42cy minC=986 n=355885}
-## increment.atomicInc: bms[3]={min=26cy mean=44cy minC=2 n=355885}
-## increment.atomicInc: bms[4]={min=28cy mean=48cy minC=2733 n=355885}
+## increment.inc: ts[0]={min=16cy mean=18cy minC=314358 n=390304}
+## increment.inc: ts[1]={min=16cy mean=20cy minC=256916 n=390304}
+## increment.inc: ts[2]={min=16cy mean=22cy minC=151829 n=390304}
+## increment.inc: ts[3]={min=16cy mean=27cy minC=65869 n=390304}
+## increment.inc: ts[4]={min=16cy mean=30cy minC=16848 n=390304}
+## increment.atomicInc: ts[0]={min=26cy mean=31cy minC=116704 n=355885}
+## increment.atomicInc: ts[1]={min=26cy mean=37cy minC=12701 n=355885}
+## increment.atomicInc: ts[2]={min=26cy mean=42cy minC=986 n=355885}
+## increment.atomicInc: ts[3]={min=26cy mean=44cy minC=2 n=355885}
+## increment.atomicInc: ts[4]={min=28cy mean=48cy minC=2733 n=355885}
 
 # The use of cpuid, rtsc, rtsp is modeled from Intel document titled
 #   "How to Benchmark Code Execution Times on Intel IA-32
@@ -173,6 +173,7 @@ export math, algorithm
 const
   DEBUG = false
   USE_RDTSCP_FOR_END_CYCLES = false
+  DEFAULT_OVERHEAD_RUNTIME = 0.25
   DEFAULT_CPS_RUNTIME = 0.25
   DEFAULT_CYCLES_TO_SEC_THRESHOLD = 1_000.0
 
@@ -183,9 +184,9 @@ type
     debug = 2 ## Additional debug output
     verbose = 3 ## Copious output
 
-  BmSuiteObj* = object ## Object associated with a bmSuite
+  SuiteObj* = object ## Object associated with a bmSuite
     suiteName: string ## Name of the suite
-    testName: string ## Name of the current run
+    testName: string ## Name of the current test
     fullName: string ## Suite and Runame concatonated
     cyclesPerSec: float ## Frequency of cycle counter
     cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
@@ -212,71 +213,71 @@ proc DBGV*(verbosity: Verbosity): bool {.inline.} =
   ## Return true if verbosity >= Verbosity.verbose
   result = verbosity >= Verbosity.verbose
 
-proc NONE*(bmso: BmSuiteObj): bool {.inline.} =
-  ## Return true if bmso.verbosity == Verbosity.none
-  result = NONE(bmso.verbosity)
+proc NONE*(suiteObj: SuiteObj): bool {.inline.} =
+  ## Return true if suiteObj.verbosity == Verbosity.none
+  result = NONE(suiteObj.verbosity)
 
-proc NRML*(bmso: BmSuiteObj): bool {.inline.} =
+proc NRML*(suiteObj: SuiteObj): bool {.inline.} =
   ## Return true if bsmo.verbosity >= Verbosity.normal
-  result = NRML(bmso.verbosity)
+  result = NRML(suiteObj.verbosity)
 
-proc DBG*(bmso: BmSuiteObj): bool {.inline.} =
-  ## Return true if bmso.verbosity >= Verbosity.debug
-  result = DBG(bmso.verbosity)
+proc DBG*(suiteObj: SuiteObj): bool {.inline.} =
+  ## Return true if suiteObj.verbosity >= Verbosity.debug
+  result = DBG(suiteObj.verbosity)
 
-proc DBGV*(bmso: BmSuiteObj): bool {.inline.} =
-  ## Return true if bmso.verbosity >= Verbosity.verbose
-  result = DBGV(bmso.verbosity)
+proc DBGV*(suiteObj: SuiteObj): bool {.inline.} =
+  ## Return true if suiteObj.verbosity >= Verbosity.verbose
+  result = DBGV(suiteObj.verbosity)
 
 # Forward decls
 proc secToStr*(seconds: float): string
-proc cyclesToStr*(bmso: BmSuiteObj, cycles: float): string
+proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string
 
 proc strOrNil(s: string): string =
   result = if s == nil: "nil" else: s
 
-proc `$`*(bmso: BmSuiteObj): string =
-  result = "{suiteName=" & strOrNil(bmso.suiteName) &
-           " testName=" & strOrNil(bmso.testName) &
-           " fullName=" & strOrNil(bmso.fullName) &
-           " cyclesPerSec=" & secToStr(bmso.cyclesPerSec) &
-           " cyclesToSecThreshold=" & secToStr(bmso.cyclesToSecThreshold) &
-           " verbosity=" & $bmso.verbosity &
-           " overhead=" & cyclesToStr(bmso, bmso.overhead) &
-           " hasRDTSCP=" & $bmso.hasRDTSCP & "}"
+proc `$`*(suiteObj: SuiteObj): string =
+  result = "{suiteName=" & strOrNil(suiteObj.suiteName) &
+           " testName=" & strOrNil(suiteObj.testName) &
+           " fullName=" & strOrNil(suiteObj.fullName) &
+           " cyclesPerSec=" & secToStr(suiteObj.cyclesPerSec) &
+           " cyclesToSecThreshold=" & secToStr(suiteObj.cyclesToSecThreshold) &
+           " verbosity=" & $suiteObj.verbosity &
+           " overhead=" & cyclesToStr(suiteObj, suiteObj.overhead) &
+           " hasRDTSCP=" & $suiteObj.hasRDTSCP & "}"
 
 type
-  BmStats* = object                     ## Statistical benchmark data
-    n*: int                             ## number of data points
-    minC*: int                          ## number of data points == min
-    maxC*: int                          ## number of data points == max
-    sum*, min*, max*, mean*: float      ## self-explaining
+  TestStats* = object ## A test run's statistical data
+    n*: int ## number of data points
+    minC*: int ## number of data points == min
+    maxC*: int ## number of data points == max
+    sum*, min*, max*, mean*: float ## self-explaining
     oldM, oldS, newS: float
 
-proc `$`*(s: BmStats): string =
-  ## Print the BmStats.
+proc `$`*(s: TestStats): string =
+  ## Print the TestStats.
   "{n=" & $s.n & " sum=" & $s.sum & " min=" & $s.min & " minC=" & $s.minC &
     " max=" & $s.max & " maxC=" & $s.maxC & " mean=" & $s.mean & "}"
 
-proc zero*(bms: var BmStats) =
-  ## Zero BmStats fields
-  bms.n = 0
-  bms.minC = 0
-  bms.maxC = 0
-  bms.sum = 0.0
-  bms.min = 0.0
-  bms.max = 0.0
-  bms.mean = 0.0
-  bms.oldM = 0.0
-  bms.oldS = 0.0
-  bms.newS = 0.0
+proc zero*(ts: var TestStats) =
+  ## Zero TestStats fields
+  ts.n = 0
+  ts.minC = 0
+  ts.maxC = 0
+  ts.sum = 0.0
+  ts.min = 0.0
+  ts.max = 0.0
+  ts.mean = 0.0
+  ts.oldM = 0.0
+  ts.oldS = 0.0
+  ts.newS = 0.0
 
-proc zero*(bmsArray: var openarray[BmStats]) =
-  ## Zero an array of BmStats
-  for i in 0..bmsArray.len-1:
-    zero(bmsArray[i])
+proc zero*(tsArray: var openarray[TestStats]) =
+  ## Zero an array of TestStats
+  for i in 0..tsArray.len-1:
+    zero(tsArray[i])
 
-proc push*(s: var BmStats, x: float) =
+proc push*(s: var TestStats, x: float) =
   ## Pushes a value `x` for processing
   inc(s.n)
   # See Knuth TAOCP vol 2, 3rd edition, page 232
@@ -308,16 +309,16 @@ proc push*(s: var BmStats, x: float) =
     s.oldS = s.newS
   s.sum = s.sum + x
   
-proc push*(s: var BmStats, x: int) =
+proc push*(s: var TestStats, x: int) =
   ## Pushes a value `x` for processing. `x` is simply converted to ``float``
   ## and the other push operation is called.
   push(s, toFloat(x))
   
-proc variance*(s: BmStats): float =
+proc variance*(s: TestStats): float =
   ## Computes the current variance of `s`
   if s.n > 1: result = s.newS / (toFloat(s.n - 1))
 
-proc standardDeviation*(s: BmStats): float =
+proc standardDeviation*(s: TestStats): float =
   ## Computes the current standard deviation of `s`
   result = sqrt(variance(s))
 
@@ -458,11 +459,11 @@ proc getEndCycles(tscAux: var int32): int64 {.inline.} =
     result = rdtsc()
     mfence()
 
-proc initializeCycles(bmso: BmSuiteObj, tscAux: var int32): int64 {.inline.} =
+proc initializeCycles(suiteObj: SuiteObj, tscAux: var int32): int64 {.inline.} =
   ## Initalize as per the ia32-ia64-benchmark document returning
   ## the tsc value as exiting and the tscAux in the var param
-  if DBGV(bmso): echo "initializeCycles:+"
-  if bmso.hasRdtscp:
+  if DBGV(suiteObj): echo "initializeCycles:+"
+  if suiteObj.hasRdtscp:
     discard getBegCycles()
     discard getEndCycles(tscAux)
     discard getBegCycles()
@@ -472,9 +473,9 @@ proc initializeCycles(bmso: BmSuiteObj, tscAux: var int32): int64 {.inline.} =
     discard getEndCyclesNoRdtscp()
     discard getBegCycles()
     result = getEndCyclesNoRdtscp()
-  if DBGV(bmso): echo "initializeCycles:- result=", result, " tscAux=", tscAux
+  if DBGV(suiteObj): echo "initializeCycles:- result=", result, " tscAux=", tscAux
 
-proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): float =
+proc cyclesPerSecond*(suiteObj: SuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): float =
   proc cps(seconds: float): float =
     ## Determine the approximate cycles per second of the TSC.
     ## The seconds parameter is the length of the meausrement.
@@ -488,14 +489,14 @@ proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): f
       endTime: float
 
     endTime = epochTime() + seconds
-    start = initializeCycles(bmso, tscAuxInitial)
+    start = initializeCycles(suiteObj, tscAuxInitial)
     while epochTime() <= endTime:
-      if bmso.hasRDTSCP:
+      if suiteObj.hasRDTSCP:
         ec = getEndCycles(tscAuxNow)
       else:
         ec = getEndCyclesNoRdtscp()
       if tscAuxInitial != tscAuxNow:
-        if DBG(bmso):
+        if DBG(suiteObj):
           echo "cps:- BAD tscAuxNow:", tscAuxNow,
             " != tscAuxInitial:", tscAuxInitial
         return -1.0
@@ -503,17 +504,17 @@ proc cyclesPerSecond*(bmso: BmSuiteObj, seconds: float = DEFAULT_CPS_RUNTIME): f
 
   ## Call cps several times to maximize the chance
   ## of getting a good value
-  if DBG(bmso): echo "cyclesPerSecond:+ seconds=", seconds
+  if DBG(suiteObj): echo "cyclesPerSecond:+ seconds=", seconds
   for i in 0..2:
     result = cps(seconds)
     if result > 0.0:
-      if DBG(bmso): echo "cyclesPerSecond:- result=", result
+      if DBG(suiteObj): echo "cyclesPerSecond:- result=", result
       return result
   result = -1.0
-  if DBG(bmso): echo "cyclesPerSecond:- BAD result=", result
+  if DBG(suiteObj): echo "cyclesPerSecond:- BAD result=", result
 
-template measure(bmso: BmSuiteObj, durations: var openarray[float],
-    bmsArray: var openarray[BmStats], body: stmt): bool =
+template measure(suiteObj: SuiteObj, durations: var openarray[float],
+    tsArray: var openarray[TestStats], body: stmt): bool =
   var
     ok: bool = true
     tscAuxInitial: int32
@@ -521,13 +522,13 @@ template measure(bmso: BmSuiteObj, durations: var openarray[float],
     bc : int64
     ec : int64
 
-  if DBGV(bmso): echo "measure:+"
-  discard initializeCycles(bmso, tscAuxInitial)
-  if DBGV(bmso):
-    echo "measure:  before loop loopCount=", bmsArray.len,
+  if DBGV(suiteObj): echo "measure:+"
+  discard initializeCycles(suiteObj, tscAuxInitial)
+  if DBGV(suiteObj):
+    echo "measure:  before loop loopCount=", tsArray.len,
       " tscAuxInitial=", tscAuxInitial
-  for i in 0..bmsArray.len-1:
-    if bmso.hasRDTSCP:
+  for i in 0..tsArray.len-1:
+    if suiteObj.hasRDTSCP:
       bc = getBegCycles()
       body
       ec = getEndCycles(tscAuxNow)
@@ -537,35 +538,35 @@ template measure(bmso: BmSuiteObj, durations: var openarray[float],
       ec = getEndCyclesNoRdtscp()
     if ec < bc:
       ok = false
-      if DBG(bmso): echo "measure: BAD ec:" & $ec & " < bc:" & $bc
+      if DBG(suiteObj): echo "measure: BAD ec:" & $ec & " < bc:" & $bc
       break
-    var adjDuration = float(ec - bc) - bmso.overhead
+    var adjDuration = float(ec - bc) - suiteObj.overhead
     if adjDuration < 0: adjDuration = 0
     durations[i] = adjDuration
-    if DBGV(bmso):
+    if DBGV(suiteObj):
       echo "measure:  duration[", i, "]=", durations[i], " ec=", float(ec), " bc=",
         float(bc)
     if tscAuxInitial != tscAuxNow:
       # Switched CPU we can't trust duration
-      if DBG(bmso):
+      if DBG(suiteObj):
         echo "measure:  BAD tscAuxNow=", tscAuxNow, " != tscAuxInitial=", tscAuxInitial
       ok = false;
       break
   if ok:
     sort(durations, system.cmp[float])
-    for i in 0..bmsArray.len-1:
-      bmsArray[i].push(durations[i])
-  if DBGV(bmso): echo "measure:- ok=", $ok
+    for i in 0..tsArray.len-1:
+      tsArray[i].push(durations[i])
+  if DBGV(suiteObj): echo "measure:- ok=", $ok
   ok
 
-template measureSecs(bmso: BmSuiteObj, seconds: float,
-    bmsArray: var openarray[BmStats], body: stmt) =
+template measureSecs(suiteObj: SuiteObj, seconds: float,
+    tsArray: var openarray[TestStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
-  ## returning the array of BmStats for the loop timings. If
-  if DBGV(bmso): echo "measureSecs:+ seconds=", seconds
+  ## returning the array of TestStats for the loop timings. If
+  if DBGV(suiteObj): echo "measureSecs:+ seconds=", seconds
 
   var
-    durations = newSeq[float](bmsArray.len)
+    durations = newSeq[float](tsArray.len)
     runDuration = seconds
     start = epochTime()
     cur = start
@@ -574,26 +575,26 @@ template measureSecs(bmso: BmSuiteObj, seconds: float,
   # is simpler because we don't have to pass or calculate
   # the current cycles per second.
   while runDuration > cur - start:
-    if not measure(bmso, durations, bmsArray, body):
-      if DBGV(bmso): echo "echo measureSecs: BAD measurement"
+    if not measure(suiteObj, durations, tsArray, body):
+      if DBGV(suiteObj): echo "echo measureSecs: BAD measurement"
     cur = epochTime()
 
-  if DBGV(bmso): echo "measureSecs:-"
+  if DBGV(suiteObj): echo "measureSecs:-"
 
-template measureLoops(bmso: BmSuiteObj, loopCount: int,
-    bmsArray: var openarray[BmStats], body: stmt) =
+template measureLoops(suiteObj: SuiteObj, loopCount: int,
+    tsArray: var openarray[TestStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
-  ## returning the array of BmStats for the loop timings. If
-  if DBGV(bmso): echo "measureLoops: loopCount=", loopCount
+  ## returning the array of TestStats for the loop timings. If
+  if DBGV(suiteObj): echo "measureLoops: loopCount=", loopCount
 
   var
-    durations = newSeq[float](bmsArray.len)
+    durations = newSeq[float](tsArray.len)
 
   for i in 0..loopCount-1:
-    if not measure(bmso, durations, bmsArray, body):
-      if DBGV(bmso): echo "echo measureLoops: BAD measurement"
+    if not measure(suiteObj, durations, tsArray, body):
+      if DBGV(suiteObj): echo "echo measureLoops: BAD measurement"
 
-  if DBGV(bmso): echo "measureLoops:-"
+  if DBGV(suiteObj): echo "measureLoops:-"
 
 proc secToStr*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
@@ -607,63 +608,63 @@ proc secToStr*(seconds: float): string =
     adjSeconds *= 1.0e3
   result = formatFloat(seconds, ffScientific, 4)
 
-proc cyclesToStr*(bmso: BmSuiteObj, cycles: float): string =
+proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string =
   ## Convert cycles to string either as cycles or time
-  ## depending upon bmso.cyclesToSecThreshold
-  if cycles >=  bmso.cyclesToSecThreshold:
-    result = secToStr(cycles / bmso.cyclesPerSec)
+  ## depending upon suiteObj.cyclesToSecThreshold
+  if cycles >=  suiteObj.cyclesToSecThreshold:
+    result = secToStr(cycles / suiteObj.cyclesPerSec)
   else:
     result = $round(cycles) & "cy"
 
-proc bmStatsToStr*(bmso: BmSuiteObj, s: BmStats): string =
-  ## Print the BmStats using cycles per second.
+proc bmStatsToStr*(suiteObj: SuiteObj, s: TestStats): string =
+  ## Print the TestStats using cycles per second.
   "{n=" & $s.n &
-    " min=" & cyclesToStr(bmso, s.min) &
+    " min=" & cyclesToStr(suiteObj, s.min) &
     " minC=" & $s.minC &
-    " max=" & cyclesToStr(bmso, s.max) &
+    " max=" & cyclesToStr(suiteObj, s.max) &
     " maxC=" & $s.maxC &
-    " mean=" & cyclesToStr(bmso, s.mean) &
-    " sum=" & cyclesToStr(bmso, s.sum) &
+    " mean=" & cyclesToStr(suiteObj, s.mean) &
+    " sum=" & cyclesToStr(suiteObj, s.sum) &
     "}"
 
-proc bmEchoResults*(bmso: BmSuiteObj,
-    bmsArray: openarray[BmStats]) =
+proc bmEchoResults*(suiteObj: SuiteObj,
+    tsArray: openarray[TestStats]) =
   ## Echo to the console the results of a run. To override
   ## set verbosity = Verbosity.none and then write your own
   ## code in teardown.
   var
-    bmsArrayIdxStr = ""
+    tsArrayIdxStr = ""
     idx = 0
-  for bms in bmsArray:
-    var s = bmso.fullName & ":"
-    if bmsArray.len > 1:
-      bmsArrayIdxStr = "[" & $idx & "]"
-    if NRML(bmso):
-      s &= " bms" & bmsArrayIdxStr & "=" &
-          "{min=" & cyclesToStr(bmso, bms.min) &
-          " mean=" & cyclesToStr(bmso, bms.mean) &
-          " minC=" & $bms.minC &
-          " n=" & $bms.n & "}"
+  for ts in tsArray:
+    var s = suiteObj.fullName & ":"
+    if tsArray.len > 1:
+      tsArrayIdxStr = "[" & $idx & "]"
+    if NRML(suiteObj):
+      s &= " ts" & tsArrayIdxStr & "=" &
+          "{min=" & cyclesToStr(suiteObj, ts.min) &
+          " mean=" & cyclesToStr(suiteObj, ts.mean) &
+          " minC=" & $ts.minC &
+          " n=" & $ts.n & "}"
     else:
-      s &= " bms=" & bmStatsToStr(bmso, bms)
+      s &= " ts=" & bmStatsToStr(suiteObj, ts)
     echo s
     idx += 1
 
-proc bmWarmupCpu*(bmso: BmSuiteObj, seconds: float) =
+proc bmWarmupCpu*(suiteObj: SuiteObj, seconds: float) =
   ## Warmup the cpu so its running at its highest clock rate
   var
-    bmsa: array[0..0, BmStats]
+    tsa: array[0..0, TestStats]
     v: int
-  if DBGV(bmso): echo "bmWarmupCup:+"
-  measureSecs(bmso, seconds, bmsa, inc(v))
-  if DBGV(bmso): echo "bmWarmupCup:-"
+  if DBGV(suiteObj): echo "bmWarmupCup:+"
+  measureSecs(suiteObj, seconds, tsa, inc(v))
+  if DBGV(suiteObj): echo "bmWarmupCup:-"
 
 template suite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
   ## Begin a benchmark suite. May contian one or more of setup, teardown,
   ## bmTime, bmLoop.  which are detailed below:
   ##::
-  ##  var bmso {.inject.}: BmSuiteObj
+  ##  var suiteObj {.inject.}: SuiteObj
   ##  ## Suite object
   ##::
   ##  template setup*(setupBody: stmt): stmt {.immediate.} =
@@ -672,50 +673,50 @@ template suite*(nameSuite: string, warmupSeconds: float,
   ##  template teardown*(teardownBody: stmt): stmt {.immediate.} =
   ##    ## This is executed after to each bmTime or bmLoop
   ##::
-  ##  template test*(nameRun: string, loopCount: int,
-  ##                   bmsArray: var openarray[BmStats],
+  ##  template test*(name string, loopCount: int,
+  ##                   tsArray: var openarray[TestStats],
   ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody loopCount * bmsArray.len times. Upon termination
-  ##    ## bmsArray contains the results.
+  ##    ## Run the testBody loopCount * tsArray.len times. Upon termination
+  ##    ## tsArray contains the results.
   ##::
-  ##  template test*(nameRun: string, loopCount: int,
-  ##                   bms: var BmStats,
+  ##  template test*(name string, loopCount: int,
+  ##                   ts: var TestStats,
   ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody loopCount times. Upon termination bms
+  ##    ## Run the testBody loopCount times. Upon termination ts
   ##    ## contains the result.
   ##::
-  ##  template test*(nameRun: string, seconds: float,
-  ##                   bmsArray: var openarray[BmStats],
+  ##  template test*(name string, seconds: float,
+  ##                   tsArray: var openarray[TestStats],
   ##                   testBody: stmt): stmt {.dirty.} =
   ##    ## Run the testBody in a loop for seconds and the number of loops will be
-  ##    ## modulo the length of bmsArray. Upon termination bmsArray contiains
+  ##    ## modulo the length of tsArray. Upon termination tsArray contiains
   ##    ## the results.
   ##::
-  ##  template test*(nameRun: string, seconds: float,
-  ##                   bms: var BmStats,
+  ##  template test*(name string, seconds: float,
+  ##                   ts: var TestStats,
   ##                   testBody: stmt): stmt {.dirty.} =
   ##    ## Run the testBody in a loop for seconds and the number of loops will be
-  ##    ## modulo the length of bmsArray with bms containing the results.
+  ##    ## modulo the length of tsArray with ts containing the results.
   block:
     var
-      bmso {.inject.}: BmSuiteObj
-      bmsa: array[0..0, BmStats]
+      suiteObj {.inject.}: SuiteObj
+      tsa: array[0..0, TestStats]
 
-    # Initialize bmso
-    bmso.suiteName = nameSuite
-    bmso.overhead = 0
-    bmso.verbosity = bmDefaultVerbosity
-    bmso.hasRDTSCP = hasRDTSCP()
-    bmso.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
-    bmso.cyclesPerSec = cyclesPerSecond(bmso)
+    # Initialize suiteObj
+    suiteObj.suiteName = nameSuite
+    suiteObj.overhead = 0
+    suiteObj.verbosity = bmDefaultVerbosity
+    suiteObj.hasRDTSCP = hasRDTSCP()
+    suiteObj.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
+    suiteObj.cyclesPerSec = cyclesPerSecond(suiteObj)
 
     # Warmup the CPU
-    bmWarmupCpu(bmso, warmupSeconds)
+    bmWarmupCpu(suiteObj, warmupSeconds)
 
     # Measure overhead
-    measureSecs(bmso, 0.25, bmsa, (discard))
-    bmso.overhead = bmsa[0].min
-    if DBGV(bmso): echo "bmso", bmso
+    measureSecs(suiteObj, DEFAULT_OVERHEAD_RUNTIME, tsa, (discard))
+    suiteObj.overhead = tsa[0].min
+    if DBGV(suiteObj): echo "suiteObj", suiteObj
 
 
     # The implementation of setup/teardown when invoked by bmTime
@@ -731,67 +732,67 @@ template suite*(nameSuite: string, warmupSeconds: float,
       template teardownImpl*: stmt = teardownBody
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(nameRun: string, loopCount: int,
-                     bmsArray: var openarray[BmStats],
+    template test*(name: string, loopCount: int,
+                     tsArray: var openarray[TestStats],
                      testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody loopCount * bmsArray.len times. Upon termination
-      ## bmsArray contains the results.
+      ## Run the testBody loopCount * tsArray.len times. Upon termination
+      ## tsArray contains the results.
       block:
         try:
-          bmso.testName = nameRun
-          bmso.fullName = bmso.suiteName & "." & bmso.testName
-          bmsArray.zero()
+          suiteObj.testName = name
+          suiteObj.fullName = suiteObj.suiteName & "." & suiteObj.testName
+          tsArray.zero()
           setupImpl()
-          measureLoops(bmso, loopCount, bmsArray, testBody)
+          measureLoops(suiteObj, loopCount, tsArray, testBody)
         except:
-          if NRML(bmso):
-            echo "bmLoop ", bmso.fullName &
+          if NRML(suiteObj):
+            echo "bmLoop ", suiteObj.fullName &
               ": exception=", getCurrentExceptionMsg()
         finally:
           teardownImpl()
-          bmEchoResults(bmso, bmsArray)
+          bmEchoResults(suiteObj, tsArray)
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(nameRun: string, loopCount: int,
-        bms: var BmStats, testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody loopCount times. Upon termination bms
+    template test*(name: string, loopCount: int,
+        ts: var TestStats, testBody: stmt): stmt {.dirty.} =
+      ## Run the testBody loopCount times. Upon termination ts
       ## contains the result.
       block:
-        var bmsArray: array[0..0, BmStats]
-        test(nameRun, loopCount, bmsArray, testBody)
-        bms = bmsArray[0]
+        var tsArray: array[0..0, TestStats]
+        test(name, loopCount, tsArray, testBody)
+        ts = tsArray[0]
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(nameRun: string, seconds: float,
-        bmsArray: var openarray[BmStats], testBody: stmt): stmt {.dirty.} =
+    template test*(name: string, seconds: float,
+        tsArray: var openarray[TestStats], testBody: stmt): stmt {.dirty.} =
       ## Run the testBody in a loop for seconds and the number of loops will be
-      ## modulo the length of bmsArray. Upon termination bmsArray contiains
+      ## modulo the length of tsArray. Upon termination tsArray contiains
       ## the results.
       block:
         try:
-          bmso.testName = nameRun
-          bmso.fullName = bmso.suiteName & "." & bmso.testName
-          bmsArray.zero()
+          suiteObj.testName = name
+          suiteObj.fullName = suiteObj.suiteName & "." & suiteObj.testName
+          tsArray.zero()
           setupImpl()
-          measureSecs(bmso, seconds, bmsArray, testBody)
+          measureSecs(suiteObj, seconds, tsArray, testBody)
         except:
-          if NRML(bmso):
-            echo "bmTime ", bmso.fullName,
+          if NRML(suiteObj):
+            echo "bmTime ", suiteObj.fullName,
               ": exception=", getCurrentExceptionMsg()
         finally:
           teardownImpl()
-          if NRML(bmso):
-            bmEchoResults(bmso, bmsArray)
+          if NRML(suiteObj):
+            bmEchoResults(suiteObj, tsArray)
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(nameRun: string, seconds: float, bms: var BmStats,
+    template test*(name: string, seconds: float, ts: var TestStats,
         testBody: stmt): stmt {.dirty.} =
       ## Run the testBody in a loop for seconds and the number of loops will be
-      ## modulo the length of bmsArray with bms containing the results.
+      ## modulo the length of tsArray with ts containing the results.
       block:
-        var bmsArray: array[0..0, BmStats]
-        test(nameRun, seconds, bmsArray, testBody)
-        bms = bmsArray[0]
+        var tsArray: array[0..0, TestStats]
+        test(name, seconds, tsArray, testBody)
+        ts = tsArray[0]
 
     # Instanitate the suite body
     bmSuiteBody
@@ -857,7 +858,7 @@ when isMainModule:
 
       suite "loop", 1.0:
         var
-          bms: BmStats
+          ts: TestStats
           loops = 0
           setupCalled = 0
           teardownCalled = 0
@@ -869,31 +870,31 @@ when isMainModule:
         teardown:
           teardownCalled += 1
 
-        test "loop 1", 1, bms:
+        test "loop 1", 1, ts:
           check(setupCalled == 1)
           check(teardownCalled == 0)
           loops += 1
-        checkpoint(bmso.fullName & ": bms=" & $bms)
+        checkpoint(suiteObj.fullName & ": ts=" & $ts)
         check(loops == 1)
         check(setupCalled == 1)
         check(teardownCalled == 1)
-        check(bms.n == 1)
-        check(bms.min >= 0.0)
+        check(ts.n == 1)
+        check(ts.min >= 0.0)
 
-        test "loop 2", 2, bms:
+        test "loop 2", 2, ts:
           check(setupCalled == 2)
           check(teardownCalled == 1)
           loops += 1
-        checkpoint(bmso.fullName & ": bms=" & $bms)
+        checkpoint(suiteObj.fullName & ": ts=" & $ts)
         check(loops == 2)
         check(setupCalled == 2)
         check(teardownCalled == 2)
-        check(bms.n == 2)
-        check(bms.min >= 0.0)
+        check(ts.n == 2)
+        check(ts.min >= 0.0)
 
       suite "time", 0.0:
         var
-          bms: BmStats
+          ts: TestStats
           loops = 0
           setupCalled = 0
           teardownCalled = 0
@@ -905,21 +906,21 @@ when isMainModule:
         teardown:
           teardownCalled += 1
 
-        test "+=1 0.001 secs", 0.001, bms:
+        test "+=1 0.001 secs", 0.001, ts:
           loops += 1
           check(setupCalled == 1)
           check(teardownCalled == 0)
 
-        checkpoint(bmso.fullName & ": bms=" & $bms)
+        checkpoint(suiteObj.fullName & ": ts=" & $ts)
         check(loops > 100)
         check(setupCalled == 1)
         check(teardownCalled == 1)
-        check(bms.n > 1)
-        check(bms.min >= 0.0)
+        check(ts.n > 1)
+        check(ts.min >= 0.0)
 
       suite "bmTime", 0:
         var
-          bms: BmStats
+          ts: TestStats
           loops = 0
           setupCalled = 0
           teardownCalled = 0
@@ -929,15 +930,15 @@ when isMainModule:
           setupCalled += 1
 
         teardown:
-          bmso.verbosity = Verbosity.debug
+          suiteObj.verbosity = Verbosity.debug
           teardownCalled += 1
 
-        test "atomicInc 2 secs", 2.0, bms:
+        test "atomicInc 2 secs", 2.0, ts:
           atomicInc(loops)
           check(setupCalled == 1)
           check(teardownCalled == 0)
 
-        checkpoint(bmso.fullName & ": bms=" & $bms)
+        checkpoint(suiteObj.fullName & ": ts=" & $ts)
         check(loops > 100)
         check(setupCalled == 1)
         check(teardownCalled == 1)
