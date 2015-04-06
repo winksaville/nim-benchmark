@@ -1269,15 +1269,15 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
 <pre>$ cat examples/bminc.nim
 import benchmark
 
-bmSuite &quot;increment&quot;, 0.0:
+suite &quot;increment&quot;, 0.0:
   var
     ts: TestStats
     loops = 0
   
-  bmTime &quot;inc&quot;, 0.5, ts:
+  test &quot;inc&quot;, 0.5, ts:
     inc(loops)
   
-  bmTime &quot;atomicInc&quot;, 0.5, ts:
+  test &quot;atomicInc&quot;, 0.5, ts:
     atomicInc(loops)</pre>
 And then compiling and running we see some odd data. The atomicInc(loops) is faster, 48cy, then inc(loops) which is unexpected. Also minC was only 1 which means that for the 400,000+ executions of the inc(loops) and atomicInc(loops) only 1 was at min value, 50cy or 48cy respectively. This doesn't give you a lot confidence in the data.<pre>$ nim c --hints:off exmpl/bminc.nim
 CC: benchmark_bminc2
@@ -1294,16 +1294,16 @@ CC: stdlib_posix
 $ exmpl/bminc
 increment.inc: ts={min=50cy mean=78cy minC=1 n=452276}
 increment.atomicInc: ts={min=48cy mean=81cy minC=1 n=431060}</pre>
-So lets make two changes to the code we'll change the warmup time for bmSuite from 0.0 to 1.0 second. And we'll change ts to an array of 5 TestStats rather than just one.<pre>$ cat exmpl/bminc2.nim
-bmSuite &quot;increment&quot;, 1.0:
+So lets make two changes to the code we'll change the warmup time for suite from 0.0 to 1.0 second. And we'll change ts to an array of 5 TestStats rather than just one.<pre>$ cat exmpl/bminc2.nim
+suite &quot;increment&quot;, 1.0:
   var
     ts: array[0..4, TestStats]
     loops = 0
   
-  bmTime &quot;inc&quot;, 0.5, ts:
+  test &quot;inc&quot;, 0.5, ts:
     inc(loops)
   
-  bmTime &quot;atomicInc&quot;, 0.5, ts:
+  test &quot;atomicInc&quot;, 0.5, ts:
     atomicInc(loops)</pre>
 With these change we still see the atomicInc being faster but we also see min ranging from 50cy to 68cy and the mean 75cy to 91cy giving us a better idea of the range of data. But we still have this oddity of atomicInc being faster than inc.<pre>$ nim c --hints:off exmpl/bminc.nim
 CC: benchmark_bminc2
@@ -1395,7 +1395,7 @@ Logging verbosity
   <span class="Identifier">hasRDTSCP</span><span class="Other">:</span> <span class="Identifier">bool</span>             <span class="Comment">## True if the cpu has RDTSCP instruction</span>
   </pre></dt>
 <dd>
-Object associated with a bmSuite
+Object associated with a suite
 
 </dd>
 <dt id="TestStats"><a name="TestStats"></a><pre><span class="Identifier">TestStats</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
@@ -1557,12 +1557,12 @@ Warmup the cpu so its running at its highest clock rate
 <dt id="suite"><a name="suite.t,string,float,stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">warmupSeconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span> <span class="Other">{.</span>
     <span class="Identifier">immediate</span><span class="Other">.}</span></pre></dt>
 <dd>
-Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmLoop.  which are detailed below:<pre>var suiteObj {.inject.}: SuiteObj
+Begin a benchmark suite. May contian one or more of setup, teardown, test, these are detailed below:<pre>var suiteObj {.inject.}: SuiteObj
 ## Suite object</pre>
 <pre>template setup*(setupBody: stmt): stmt {.immediate.} =
-  ## This is executed prior to each bmTime or bmLoop</pre>
+  ## This is executed prior to each test</pre>
 <pre>template teardown*(teardownBody: stmt): stmt {.immediate.} =
-  ## This is executed after to each bmTime or bmLoop</pre>
+  ## This is executed after to each test</pre>
 <pre>template test*(name string, loopCount: int,
                  tsArray: var openarray[TestStats],
                  testBody: stmt): stmt {.dirty.} =
@@ -1597,7 +1597,7 @@ Begin a benchmark suite. May contian one or more of setup, teardown, bmTime, bmL
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-04 09:25:18 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-06 10:12:46 UTC</small>
       </div>
     </div>
   </div>

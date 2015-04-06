@@ -30,15 +30,15 @@
 ## $ cat examples/bminc.nim
 ## import benchmark
 ## 
-## bmSuite "increment", 0.0:
+## suite "increment", 0.0:
 ##   var
 ##     ts: TestStats
 ##     loops = 0
 ## 
-##   bmTime "inc", 0.5, ts:
+##   test "inc", 0.5, ts:
 ##     inc(loops)
 ## 
-##   bmTime "atomicInc", 0.5, ts:
+##   test "atomicInc", 0.5, ts:
 ##     atomicInc(loops)
 
 ## And then compiling and running we see some odd data. The
@@ -65,19 +65,19 @@
 ## increment.atomicInc: ts={min=48cy mean=81cy minC=1 n=431060}
 
 ## So lets make two changes to the code we'll change the warmup
-## time for bmSuite from 0.0 to 1.0 second. And we'll change
+## time for suite from 0.0 to 1.0 second. And we'll change
 ## ts to an array of 5 TestStats rather than just one.
 ##:: 
 ## $ cat exmpl/bminc2.nim
-## bmSuite "increment", 1.0:
+## suite "increment", 1.0:
 ##   var
 ##     ts: array[0..4, TestStats]
 ##     loops = 0
 ## 
-##   bmTime "inc", 0.5, ts:
+##   test "inc", 0.5, ts:
 ##     inc(loops)
 ## 
-##   bmTime "atomicInc", 0.5, ts:
+##   test "atomicInc", 0.5, ts:
 ##     atomicInc(loops)
 
 ## With these change we still see the atomicInc being faster
@@ -184,7 +184,7 @@ type
     debug = 2 ## Additional debug output
     verbose = 3 ## Copious output
 
-  SuiteObj* = object ## Object associated with a bmSuite
+  SuiteObj* = object ## Object associated with a suite
     suiteName: string ## Name of the suite
     testName: string ## Name of the current test
     fullName: string ## Suite and Runame concatonated
@@ -662,16 +662,16 @@ proc bmWarmupCpu*(suiteObj: SuiteObj, seconds: float) =
 template suite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
   ## Begin a benchmark suite. May contian one or more of setup, teardown,
-  ## bmTime, bmLoop.  which are detailed below:
+  ## test, these are detailed below:
   ##::
   ##  var suiteObj {.inject.}: SuiteObj
   ##  ## Suite object
   ##::
   ##  template setup*(setupBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed prior to each bmTime or bmLoop
+  ##    ## This is executed prior to each test
   ##::
   ##  template teardown*(teardownBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed after to each bmTime or bmLoop
+  ##    ## This is executed after to each test
   ##::
   ##  template test*(name string, loopCount: int,
   ##                   tsArray: var openarray[TestStats],
@@ -719,16 +719,16 @@ template suite*(nameSuite: string, warmupSeconds: float,
     if DBGV(suiteObj): echo "suiteObj", suiteObj
 
 
-    # The implementation of setup/teardown when invoked by bmTime
+    # The implementation of setup/teardown when invoked by test
     template setupImpl*: stmt = discard
     template teardownImpl*: stmt = discard
 
     template setup*(setupBody: stmt): stmt {.immediate.} =
-      ## This is executed prior to each bmTime or bmLoop
+      ## This is executed prior to each test
       template setupImpl*: stmt = setupBody
 
     template teardown*(teardownBody: stmt): stmt {.immediate.} =
-      ## This is executed after to each bmTime or bmLoop
+      ## This is executed after to each test
       template teardownImpl*: stmt = teardownBody
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
@@ -746,7 +746,7 @@ template suite*(nameSuite: string, warmupSeconds: float,
           measureLoops(suiteObj, loopCount, tsArray, testBody)
         except:
           if NRML(suiteObj):
-            echo "bmLoop ", suiteObj.fullName &
+            echo "test ", suiteObj.fullName &
               ": exception=", getCurrentExceptionMsg()
         finally:
           teardownImpl()
@@ -777,7 +777,7 @@ template suite*(nameSuite: string, warmupSeconds: float,
           measureSecs(suiteObj, seconds, tsArray, testBody)
         except:
           if NRML(suiteObj):
-            echo "bmTime ", suiteObj.fullName,
+            echo "test ", suiteObj.fullName,
               ": exception=", getCurrentExceptionMsg()
         finally:
           teardownImpl()
@@ -918,7 +918,7 @@ when isMainModule:
         check(ts.n > 1)
         check(ts.min >= 0.0)
 
-      suite "bmTime", 0:
+      suite "test time", 0:
         var
           ts: TestStats
           loops = 0
