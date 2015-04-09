@@ -429,7 +429,7 @@ proc rdTscAux(): int32 {.inline.} =
       "rdtscp\n\t"
       :"=c"(`aux`));
   """.}
-  result = aux
+  result = aux # nil pointer error if stacktrace:on
   when DEBUG: echo "rdTscAux:- result=", result
 
 
