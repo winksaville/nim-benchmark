@@ -1195,6 +1195,16 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   </ul>
 </li>
 <li>
+  <a class="reference reference-toplevel" href="#10" id="60">Consts</a>
+  <ul class="simple simple-toc-section">
+      <li><a class="reference" href="#DEFAULT_OVERHEAD_RUNTIME"
+    title="DEFAULT_OVERHEAD_RUNTIME* = 0.25"><wbr />DEFAULT_<wbr />OVERHEAD_<wbr />RUNTIME</a></li>
+  <li><a class="reference" href="#DEFAULT_CYCLES_TO_SEC_THRESHOLD"
+    title="DEFAULT_CYCLES_TO_SEC_THRESHOLD* = 1000.0"><wbr />DEFAULT_<wbr />CYCLES_<wbr />TO_<wbr />SEC_<wbr />THRESHOLD</a></li>
+
+  </ul>
+</li>
+<li>
   <a class="reference reference-toplevel" href="#12" id="62">Procs</a>
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#NONE,Verbosity"
@@ -1233,12 +1243,10 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
     title="variance*(s: TestStats): float"><wbr />variance</a></li>
   <li><a class="reference" href="#standardDeviation,TestStats"
     title="standardDeviation*(s: TestStats): float"><wbr />standard<wbr />Deviation</a></li>
+  <li><a class="reference" href="#hasRDTSCP,"
+    title="hasRDTSCP*(): bool"><wbr />has<wbr />RDTSCP</a></li>
   <li><a class="reference" href="#cyclesPerSecond,SuiteObj,float"
     title="cyclesPerSecond*(suiteObj: SuiteObj; seconds: float = DEFAULT_CPS_RUNTIME): float"><wbr />cycles<wbr />Per<wbr />Second</a></li>
-  <li><a class="reference" href="#secToStr,float_2"
-    title="secToStr*(seconds: float): string"><wbr />sec<wbr />To<wbr />Str</a></li>
-  <li><a class="reference" href="#cyclesToStr,SuiteObj,float_2"
-    title="cyclesToStr*(suiteObj: SuiteObj; cycles: float): string"><wbr />cycles<wbr />To<wbr />Str</a></li>
   <li><a class="reference" href="#bmStatsToStr,SuiteObj,TestStats"
     title="bmStatsToStr*(suiteObj: SuiteObj; s: TestStats): string"><wbr />bm<wbr />Stats<wbr />To<wbr />Str</a></li>
   <li><a class="reference" href="#bmEchoResults,SuiteObj,openarray[TestStats]"
@@ -1251,7 +1259,13 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
 <li>
   <a class="reference reference-toplevel" href="#18" id="68">Templates</a>
   <ul class="simple simple-toc-section">
-      <li><a class="reference" href="#suite.t,string,float,stmt"
+      <li><a class="reference" href="#measureSecs.t,SuiteObj,float,openarray[TestStats],stmt"
+    title="measureSecs*(suiteObj: SuiteObj; seconds: float; 
+             tsArray: var openarray[TestStats]; body: stmt)"><wbr />measure<wbr />Secs</a></li>
+  <li><a class="reference" href="#measureLoops.t,SuiteObj,int,openarray[TestStats],stmt"
+    title="measureLoops*(suiteObj: SuiteObj; loopCount: int; 
+              tsArray: var openarray[TestStats]; body: stmt)"><wbr />measure<wbr />Loops</a></li>
+  <li><a class="reference" href="#suite.t,string,float,stmt"
     title="suite*(nameSuite: string; warmupSeconds: float; bmSuiteBody: stmt): stmt"><wbr />suite</a></li>
 
   </ul>
@@ -1426,6 +1440,21 @@ EAX..EDX registers returned by CPUID instruciton
 </dd>
 
 </dl></div>
+<div class="section" id="10">
+<h1><a class="toc-backref" href="#10">Consts</a></h1>
+<dl class="item">
+<dt id="DEFAULT_OVERHEAD_RUNTIME"><a name="DEFAULT_OVERHEAD_RUNTIME"></a><pre><span class="Identifier">DEFAULT_OVERHEAD_RUNTIME</span><span class="Operator">*</span> <span class="Other">=</span> <span class="FloatNumber">0.25</span></pre></dt>
+<dd>
+
+
+</dd>
+<dt id="DEFAULT_CYCLES_TO_SEC_THRESHOLD"><a name="DEFAULT_CYCLES_TO_SEC_THRESHOLD"></a><pre><span class="Identifier">DEFAULT_CYCLES_TO_SEC_THRESHOLD</span><span class="Operator">*</span> <span class="Other">=</span> <span class="FloatNumber">1000.0</span></pre></dt>
+<dd>
+
+
+</dd>
+
+</dl></div>
 <div class="section" id="12">
 <h1><a class="toc-backref" href="#12">Procs</a></h1>
 <dl class="item">
@@ -1471,12 +1500,12 @@ Return true if suiteObj.verbosity &gt;= Verbosity.verbose
 </dd>
 <dt id="secToStr"><a name="secToStr,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
-
+Convert seconds to string with suffix if possible
 
 </dd>
 <dt id="cyclesToStr"><a name="cyclesToStr,SuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
 <dd>
-
+Convert cycles to string either as cycles or time depending upon suiteObj.cyclesToSecThreshold
 
 </dd>
 <dt id="$"><a name="$,SuiteObj"></a><pre><span class="Keyword">proc</span> <span class="Other">`</span><span class="Operator">$</span><span class="Other">`</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
@@ -1519,19 +1548,14 @@ Computes the current variance of <cite>s</cite>
 Computes the current standard deviation of <cite>s</cite>
 
 </dd>
+<dt id="hasRDTSCP"><a name="hasRDTSCP,"></a><pre><span class="Keyword">proc</span> <span class="Identifier">hasRDTSCP</span><span class="Operator">*</span><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
+<dd>
+
+
+</dd>
 <dt id="cyclesPerSecond"><a name="cyclesPerSecond,SuiteObj,float"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesPerSecond</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Other">=</span> <span class="Identifier">DEFAULT_CPS_RUNTIME</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">float</span></pre></dt>
 <dd>
 Determine the approximate cycles per second of the TSC. The seconds parameter is the length of the meausrement. return a value &lt; 0.0 if unsuccessful. This happens if the code detects if the thread migrated cpu's.
-
-</dd>
-<dt id="secToStr"><a name="secToStr,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">secToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
-<dd>
-Convert seconds to string with suffix if possible
-
-</dd>
-<dt id="cyclesToStr"><a name="cyclesToStr,SuiteObj,float_2"></a><pre><span class="Keyword">proc</span> <span class="Identifier">cyclesToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">cycles</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
-<dd>
-Convert cycles to string either as cycles or time depending upon suiteObj.cyclesToSecThreshold
 
 </dd>
 <dt id="bmStatsToStr"><a name="bmStatsToStr,SuiteObj,TestStats"></a><pre><span class="Keyword">proc</span> <span class="Identifier">bmStatsToStr</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">TestStats</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span></pre></dt>
@@ -1554,36 +1578,21 @@ Warmup the cpu so its running at its highest clock rate
 <div class="section" id="18">
 <h1><a class="toc-backref" href="#18">Templates</a></h1>
 <dl class="item">
+<dt id="measureSecs"><a name="measureSecs.t,SuiteObj,float,openarray[TestStats],stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">measureSecs</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">seconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> 
+                      <span class="Identifier">tsArray</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">TestStats</span><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span></pre></dt>
+<dd>
+Meaure the execution time of body for seconds period of time returning the array of TestStats for the loop timings. If
+
+</dd>
+<dt id="measureLoops"><a name="measureLoops.t,SuiteObj,int,openarray[TestStats],stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">measureLoops</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">suiteObj</span><span class="Other">:</span> <span class="Identifier">SuiteObj</span><span class="Other">;</span> <span class="Identifier">loopCount</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span> 
+                       <span class="Identifier">tsArray</span><span class="Other">:</span> <span class="Keyword">var</span> <span class="Identifier">openarray</span><span class="Other">[</span><span class="Identifier">TestStats</span><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span></pre></dt>
+<dd>
+Meaure the execution time of body for seconds period of time returning the array of TestStats for the loop timings. If
+
+</dd>
 <dt id="suite"><a name="suite.t,string,float,stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">warmupSeconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span> <span class="Other">{.</span>
     <span class="Identifier">immediate</span><span class="Other">.}</span></pre></dt>
 <dd>
-Begin a benchmark suite. May contian one or more of setup, teardown, test, these are detailed below:<pre>var suiteObj {.inject.}: SuiteObj
-## Suite object</pre>
-<pre>template setup*(setupBody: stmt): stmt {.immediate.} =
-  ## This is executed prior to each test</pre>
-<pre>template teardown*(teardownBody: stmt): stmt {.immediate.} =
-  ## This is executed after to each test</pre>
-<pre>template test*(name string, loopCount: int,
-                 tsArray: var openarray[TestStats],
-                 testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody loopCount * tsArray.len times. Upon termination
-  ## tsArray contains the results.</pre>
-<pre>template test*(name string, loopCount: int,
-                 ts: var TestStats,
-                 testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody loopCount times. Upon termination ts
-  ## contains the result.</pre>
-<pre>template test*(name string, seconds: float,
-                 tsArray: var openarray[TestStats],
-                 testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody in a loop for seconds and the number of loops will be
-  ## modulo the length of tsArray. Upon termination tsArray contiains
-  ## the results.</pre>
-<pre>template test*(name string, seconds: float,
-                 ts: var TestStats,
-                 testBody: stmt): stmt {.dirty.} =
-  ## Run the testBody in a loop for seconds and the number of loops will be
-  ## modulo the length of tsArray with ts containing the results.</pre>
 
 
 </dd>
@@ -1597,7 +1606,7 @@ Begin a benchmark suite. May contian one or more of setup, teardown, test, these
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-09 17:31:35 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-09 18:18:59 UTC</small>
       </div>
     </div>
   </div>

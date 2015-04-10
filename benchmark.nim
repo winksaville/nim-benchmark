@@ -173,9 +173,9 @@ export math, algorithm
 const
   DEBUG = false
   USE_RDTSCP_FOR_END_CYCLES = false
-  DEFAULT_OVERHEAD_RUNTIME = 0.25
+  DEFAULT_OVERHEAD_RUNTIME* = 0.25
   DEFAULT_CPS_RUNTIME = 0.25
-  DEFAULT_CYCLES_TO_SEC_THRESHOLD = 1_000.0
+  DEFAULT_CYCLES_TO_SEC_THRESHOLD* = 1_000.0
 
 type
   Verbosity* {.pure.} = enum  ## Logging verbosity
@@ -229,12 +229,28 @@ proc DBGV*(suiteObj: SuiteObj): bool {.inline.} =
   ## Return true if suiteObj.verbosity >= Verbosity.verbose
   result = DBGV(suiteObj.verbosity)
 
-# Forward decls
-proc secToStr*(seconds: float): string
-proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string
-
 proc strOrNil(s: string): string =
   result = if s == nil: "nil" else: s
+
+proc secToStr*(seconds: float): string =
+  ## Convert seconds to string with suffix if possible
+  var
+    suffixArray = @["s", "ms", "us", "ns", "ps"]
+    adjSeconds = seconds
+
+  for suffix in suffixArray:
+    if adjSeconds >= 1.0:
+      return formatFloat(adjSeconds, ffDecimal, 3) & suffix
+    adjSeconds *= 1.0e3
+  result = formatFloat(seconds, ffScientific, 4)
+
+proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string =
+  ## Convert cycles to string either as cycles or time
+  ## depending upon suiteObj.cyclesToSecThreshold
+  if cycles >=  suiteObj.cyclesToSecThreshold:
+    result = secToStr(cycles / suiteObj.cyclesPerSec)
+  else:
+    result = $round(cycles) & "cy"
 
 proc `$`*(suiteObj: SuiteObj): string =
   result = "{suiteName=" & strOrNil(suiteObj.suiteName) &
@@ -377,7 +393,7 @@ proc mfence() {.inline.} =
       : "memory");
   """.}
 
-proc hasRDTSCP(): bool =
+proc hasRDTSCP*(): bool =
   var id = cpuid(0x80000001)
   result = (id.edx and (1 shl 27)) != 0
 
@@ -559,7 +575,7 @@ template measure(suiteObj: SuiteObj, durations: var openarray[float],
   if DBGV(suiteObj): echo "measure:- ok=", $ok
   ok
 
-template measureSecs(suiteObj: SuiteObj, seconds: float,
+template measureSecs*(suiteObj: SuiteObj, seconds: float,
     tsArray: var openarray[TestStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of TestStats for the loop timings. If
@@ -581,7 +597,7 @@ template measureSecs(suiteObj: SuiteObj, seconds: float,
 
   if DBGV(suiteObj): echo "measureSecs:-"
 
-template measureLoops(suiteObj: SuiteObj, loopCount: int,
+template measureLoops*(suiteObj: SuiteObj, loopCount: int,
     tsArray: var openarray[TestStats], body: stmt) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of TestStats for the loop timings. If
@@ -595,26 +611,6 @@ template measureLoops(suiteObj: SuiteObj, loopCount: int,
       if DBGV(suiteObj): echo "echo measureLoops: BAD measurement"
 
   if DBGV(suiteObj): echo "measureLoops:-"
-
-proc secToStr*(seconds: float): string =
-  ## Convert seconds to string with suffix if possible
-  var
-    suffixArray = @["s", "ms", "us", "ns", "ps"]
-    adjSeconds = seconds
-
-  for suffix in suffixArray:
-    if adjSeconds >= 1.0:
-      return formatFloat(adjSeconds, ffDecimal, 3) & suffix
-    adjSeconds *= 1.0e3
-  result = formatFloat(seconds, ffScientific, 4)
-
-proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string =
-  ## Convert cycles to string either as cycles or time
-  ## depending upon suiteObj.cyclesToSecThreshold
-  if cycles >=  suiteObj.cyclesToSecThreshold:
-    result = secToStr(cycles / suiteObj.cyclesPerSec)
-  else:
-    result = $round(cycles) & "cy"
 
 proc bmStatsToStr*(suiteObj: SuiteObj, s: TestStats): string =
   ## Print the TestStats using cycles per second.
