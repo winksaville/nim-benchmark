@@ -1166,14 +1166,14 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   verbose = 3                 ## Copious output"><wbr />Verbosity</a></li>
   <li><a class="reference" href="#SuiteObj"
     title="SuiteObj* = object 
-  suiteName: string           ## Name of the suite
-  testName: string            ## Name of the current test
-  fullName: string            ## Suite and Runame concatonated
-  cyclesPerSec: float         ## Frequency of cycle counter
-  cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
-  verbosity: Verbosity        ## Verbosity of output
-  overhead: float             ## Number of cycles overhead to be substracted when measuring
-  hasRDTSCP: bool             ## True if the cpu has RDTSCP instruction"><wbr />Suite<wbr />Obj</a></li>
+  suiteName*: string          ## Name of the suite
+  testName*: string           ## Name of the current test
+  fullName*: string           ## Suite and Runame concatonated
+  cyclesPerSec*: float        ## Frequency of cycle counter
+  cyclesToSecThreshold*: float ## Threshold for displaying cycles or secs
+  verbosity*: Verbosity       ## Verbosity of output
+  overhead*: float            ## Number of cycles overhead to be substracted when measuring
+  hasRDTSCP*: bool            ## True if the cpu has RDTSCP instruction"><wbr />Suite<wbr />Obj</a></li>
   <li><a class="reference" href="#TestStats"
     title="TestStats* = object 
   n*: int                     ## number of data points
@@ -1385,14 +1385,14 @@ Logging verbosity
 
 </dd>
 <dt id="SuiteObj"><a name="SuiteObj"></a><pre><span class="Identifier">SuiteObj</span><span class="Operator">*</span> <span class="Other">=</span> <span class="Keyword">object</span> 
-  <span class="Identifier">suiteName</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Name of the suite</span>
-  <span class="Identifier">testName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Name of the current test</span>
-  <span class="Identifier">fullName</span><span class="Other">:</span> <span class="Identifier">string</span>            <span class="Comment">## Suite and Runame concatonated</span>
-  <span class="Identifier">cyclesPerSec</span><span class="Other">:</span> <span class="Identifier">float</span>         <span class="Comment">## Frequency of cycle counter</span>
-  <span class="Identifier">cyclesToSecThreshold</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
-  <span class="Identifier">verbosity</span><span class="Other">:</span> <span class="Identifier">Verbosity</span>        <span class="Comment">## Verbosity of output</span>
-  <span class="Identifier">overhead</span><span class="Other">:</span> <span class="Identifier">float</span>             <span class="Comment">## Number of cycles overhead to be substracted when measuring</span>
-  <span class="Identifier">hasRDTSCP</span><span class="Other">:</span> <span class="Identifier">bool</span>             <span class="Comment">## True if the cpu has RDTSCP instruction</span>
+  <span class="Identifier">suiteName</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>          <span class="Comment">## Name of the suite</span>
+  <span class="Identifier">testName</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Name of the current test</span>
+  <span class="Identifier">fullName</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>           <span class="Comment">## Suite and Runame concatonated</span>
+  <span class="Identifier">cyclesPerSec</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">float</span>        <span class="Comment">## Frequency of cycle counter</span>
+  <span class="Identifier">cyclesToSecThreshold</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">float</span> <span class="Comment">## Threshold for displaying cycles or secs</span>
+  <span class="Identifier">verbosity</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Verbosity</span>       <span class="Comment">## Verbosity of output</span>
+  <span class="Identifier">overhead</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">float</span>            <span class="Comment">## Number of cycles overhead to be substracted when measuring</span>
+  <span class="Identifier">hasRDTSCP</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>            <span class="Comment">## True if the cpu has RDTSCP instruction</span>
   </pre></dt>
 <dd>
 Object associated with a suite
@@ -1597,7 +1597,7 @@ Begin a benchmark suite. May contian one or more of setup, teardown, test, these
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-06 10:12:46 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-09 17:31:35 UTC</small>
       </div>
     </div>
   </div>

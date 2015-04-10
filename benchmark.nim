@@ -185,14 +185,14 @@ type
     verbose = 3 ## Copious output
 
   SuiteObj* = object ## Object associated with a suite
-    suiteName: string ## Name of the suite
-    testName: string ## Name of the current test
-    fullName: string ## Suite and Runame concatonated
-    cyclesPerSec: float ## Frequency of cycle counter
-    cyclesToSecThreshold: float ## Threshold for displaying cycles or secs
-    verbosity: Verbosity ## Verbosity of output
-    overhead: float ## Number of cycles overhead to be substracted when measuring
-    hasRDTSCP: bool ## True if the cpu has RDTSCP instruction
+    suiteName*: string ## Name of the suite
+    testName*: string ## Name of the current test
+    fullName*: string ## Suite and Runame concatonated
+    cyclesPerSec*: float ## Frequency of cycle counter
+    cyclesToSecThreshold*: float ## Threshold for displaying cycles or secs
+    verbosity*: Verbosity ## Verbosity of output
+    overhead*: float ## Number of cycles overhead to be substracted when measuring
+    hasRDTSCP*: bool ## True if the cpu has RDTSCP instruction
 
 var
   bmDefaultVerbosity* = Verbosity.normal
@@ -659,143 +659,11 @@ proc bmWarmupCpu*(suiteObj: SuiteObj, seconds: float) =
   measureSecs(suiteObj, seconds, tsa, inc(v))
   if DBGV(suiteObj): echo "bmWarmupCup:-"
 
+include bmsuite
+
 template suite*(nameSuite: string, warmupSeconds: float,
     bmSuiteBody: stmt): stmt {.immediate.} =
-  ## Begin a benchmark suite. May contian one or more of setup, teardown,
-  ## test, these are detailed below:
-  ##::
-  ##  var suiteObj {.inject.}: SuiteObj
-  ##  ## Suite object
-  ##::
-  ##  template setup*(setupBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed prior to each test
-  ##::
-  ##  template teardown*(teardownBody: stmt): stmt {.immediate.} =
-  ##    ## This is executed after to each test
-  ##::
-  ##  template test*(name string, loopCount: int,
-  ##                   tsArray: var openarray[TestStats],
-  ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody loopCount * tsArray.len times. Upon termination
-  ##    ## tsArray contains the results.
-  ##::
-  ##  template test*(name string, loopCount: int,
-  ##                   ts: var TestStats,
-  ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody loopCount times. Upon termination ts
-  ##    ## contains the result.
-  ##::
-  ##  template test*(name string, seconds: float,
-  ##                   tsArray: var openarray[TestStats],
-  ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody in a loop for seconds and the number of loops will be
-  ##    ## modulo the length of tsArray. Upon termination tsArray contiains
-  ##    ## the results.
-  ##::
-  ##  template test*(name string, seconds: float,
-  ##                   ts: var TestStats,
-  ##                   testBody: stmt): stmt {.dirty.} =
-  ##    ## Run the testBody in a loop for seconds and the number of loops will be
-  ##    ## modulo the length of tsArray with ts containing the results.
-  block:
-    var
-      suiteObj {.inject.}: SuiteObj
-      tsa: array[0..0, TestStats]
-
-    # Initialize suiteObj
-    suiteObj.suiteName = nameSuite
-    suiteObj.overhead = 0
-    suiteObj.verbosity = bmDefaultVerbosity
-    suiteObj.hasRDTSCP = hasRDTSCP()
-    suiteObj.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
-    suiteObj.cyclesPerSec = cyclesPerSecond(suiteObj)
-
-    # Warmup the CPU
-    bmWarmupCpu(suiteObj, warmupSeconds)
-
-    # Measure overhead
-    measureSecs(suiteObj, DEFAULT_OVERHEAD_RUNTIME, tsa, (discard))
-    suiteObj.overhead = tsa[0].min
-    if DBGV(suiteObj): echo "suiteObj", suiteObj
-
-
-    # The implementation of setup/teardown when invoked by test
-    template setupImpl*: stmt = discard
-    template teardownImpl*: stmt = discard
-
-    template setup*(setupBody: stmt): stmt {.immediate.} =
-      ## This is executed prior to each test
-      template setupImpl*: stmt = setupBody
-
-    template teardown*(teardownBody: stmt): stmt {.immediate.} =
-      ## This is executed after to each test
-      template teardownImpl*: stmt = teardownBody
-
-    # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(name: string, loopCount: int,
-                     tsArray: var openarray[TestStats],
-                     testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody loopCount * tsArray.len times. Upon termination
-      ## tsArray contains the results.
-      block:
-        try:
-          suiteObj.testName = name
-          suiteObj.fullName = suiteObj.suiteName & "." & suiteObj.testName
-          tsArray.zero()
-          setupImpl()
-          measureLoops(suiteObj, loopCount, tsArray, testBody)
-        except:
-          if NRML(suiteObj):
-            echo "test ", suiteObj.fullName &
-              ": exception=", getCurrentExceptionMsg()
-        finally:
-          teardownImpl()
-          bmEchoResults(suiteObj, tsArray)
-
-    # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(name: string, loopCount: int,
-        ts: var TestStats, testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody loopCount times. Upon termination ts
-      ## contains the result.
-      block:
-        var tsArray: array[0..0, TestStats]
-        test(name, loopCount, tsArray, testBody)
-        ts = tsArray[0]
-
-    # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(name: string, seconds: float,
-        tsArray: var openarray[TestStats], testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody in a loop for seconds and the number of loops will be
-      ## modulo the length of tsArray. Upon termination tsArray contiains
-      ## the results.
-      block:
-        try:
-          suiteObj.testName = name
-          suiteObj.fullName = suiteObj.suiteName & "." & suiteObj.testName
-          tsArray.zero()
-          setupImpl()
-          measureSecs(suiteObj, seconds, tsArray, testBody)
-        except:
-          if NRML(suiteObj):
-            echo "test ", suiteObj.fullName,
-              ": exception=", getCurrentExceptionMsg()
-        finally:
-          teardownImpl()
-          if NRML(suiteObj):
-            bmEchoResults(suiteObj, tsArray)
-
-    # {.dirty.} is needed so setup/TeardownImpl are invokable???
-    template test*(name: string, seconds: float, ts: var TestStats,
-        testBody: stmt): stmt {.dirty.} =
-      ## Run the testBody in a loop for seconds and the number of loops will be
-      ## modulo the length of tsArray with ts containing the results.
-      block:
-        var tsArray: array[0..0, TestStats]
-        test(name, seconds, tsArray, testBody)
-        ts = tsArray[0]
-
-    # Instanitate the suite body
-    bmSuiteBody
+  bmSuite(nameSuite, warmupSeconds, bmSuiteBody)
 
 when isMainModule:
   import unittest as ut
