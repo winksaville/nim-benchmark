@@ -51,7 +51,15 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
     suiteObj.verbosity = bmDefaultVerbosity
     suiteObj.hasRDTSCP = hasRDTSCP()
     suiteObj.cyclesToSecThreshold = DEFAULT_CYCLES_TO_SEC_THRESHOLD
-    suiteObj.cyclesPerSec = cyclesPerSecond(suiteObj)
+    for i in 0..2:
+      suiteObj.cyclesPerSec = cyclesPerSecond(suiteObj)
+      if suiteObj.cyclesPerSec > 0.0:
+        break
+
+    if suiteObj.cyclesPerSec < 0.0:
+      echo suiteObj.suiteName & " BAD cyclesPerSecond stopping " &
+           "suiteObj=" & $suiteObj
+      break
 
     # Warmup the CPU
     bmWarmupCpu(suiteObj, warmupSeconds)
