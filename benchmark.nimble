@@ -1,6 +1,6 @@
 [Package]
 name          = "benchmark"
-version       = "0.7.0"
+version       = "0.8.0"
 author        = "Wink Saville"
 description   = "Provide a benchmark suite for nim programs"
 license       = "BSD"
