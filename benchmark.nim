@@ -176,6 +176,7 @@ const
   DEBUG = false
   USE_RDTSCP_FOR_END_CYCLES = false
   DEFAULT_OVERHEAD_RUNTIME* = 0.25
+  DEFAULT_WARMUP_RUNTIME* = 0.25
   DEFAULT_CPS_RUNTIME = 0.25
   DEFAULT_CYCLES_TO_SEC_THRESHOLD* = 1_000.0
 
@@ -659,9 +660,13 @@ proc bmWarmupCpu*(suiteObj: SuiteObj, seconds: float) =
 
 include bmsuite
 
-template suite*(nameSuite: string, warmupSeconds: float,
-    bmSuiteBody: stmt): stmt {.immediate.} =
+template suite*(nameSuite: string, warmupSeconds: untyped,
+    bmSuiteBody: untyped): stmt =
   bmSuite(nameSuite, warmupSeconds, bmSuiteBody)
+
+template suite*(nameSuite: string,
+    bmSuiteBody: untyped): stmt =
+  bmSuite(nameSuite, DEFAULT_WARMUP_RUNTIME, bmSuiteBody)
 
 when isMainModule:
   import unittest as ut
@@ -722,7 +727,7 @@ when isMainModule:
     ## Some simple tests
     ut.test "suite":
 
-      suite "loop", 1.0:
+      benchmark.suite "loop":
         var
           ts: TestStats
           loops = 0
@@ -758,7 +763,7 @@ when isMainModule:
         check(ts.n == 2)
         check(ts.min >= 0.0)
 
-      suite "time", 0.0:
+      benchmark.suite "time", 0.0:
         var
           ts: TestStats
           loops = 0
@@ -784,7 +789,7 @@ when isMainModule:
         check(ts.n > 1)
         check(ts.min >= 0.0)
 
-      suite "test time", 0:
+      benchmark.suite "test time", 0.0:
         var
           ts: TestStats
           loops = 0

@@ -1199,6 +1199,8 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#DEFAULT_OVERHEAD_RUNTIME"
     title="DEFAULT_OVERHEAD_RUNTIME* = 0.25"><wbr />DEFAULT_<wbr />OVERHEAD_<wbr />RUNTIME</a></li>
+  <li><a class="reference" href="#DEFAULT_WARMUP_RUNTIME"
+    title="DEFAULT_WARMUP_RUNTIME* = 0.25"><wbr />DEFAULT_<wbr />WARMUP_<wbr />RUNTIME</a></li>
   <li><a class="reference" href="#DEFAULT_CYCLES_TO_SEC_THRESHOLD"
     title="DEFAULT_CYCLES_TO_SEC_THRESHOLD* = 1000.0"><wbr />DEFAULT_<wbr />CYCLES_<wbr />TO_<wbr />SEC_<wbr />THRESHOLD</a></li>
 
@@ -1265,8 +1267,10 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   <li><a class="reference" href="#measureLoops.t,SuiteObj,int,openarray[TestStats],stmt"
     title="measureLoops*(suiteObj: SuiteObj; loopCount: int; 
               tsArray: var openarray[TestStats]; body: stmt)"><wbr />measure<wbr />Loops</a></li>
-  <li><a class="reference" href="#suite.t,string,float,stmt"
-    title="suite*(nameSuite: string; warmupSeconds: float; bmSuiteBody: stmt): stmt"><wbr />suite</a></li>
+  <li><a class="reference" href="#suite.t,string,untyped,untyped"
+    title="suite*(nameSuite: string; warmupSeconds: untyped; bmSuiteBody: untyped): stmt"><wbr />suite</a></li>
+  <li><a class="reference" href="#suite.t,string,untyped"
+    title="suite*(nameSuite: string; bmSuiteBody: untyped): stmt"><wbr />suite</a></li>
 
   </ul>
 </li>
@@ -1448,6 +1452,11 @@ EAX..EDX registers returned by CPUID instruciton
 
 
 </dd>
+<dt id="DEFAULT_WARMUP_RUNTIME"><a name="DEFAULT_WARMUP_RUNTIME"></a><pre><span class="Identifier">DEFAULT_WARMUP_RUNTIME</span><span class="Operator">*</span> <span class="Other">=</span> <span class="FloatNumber">0.25</span></pre></dt>
+<dd>
+
+
+</dd>
 <dt id="DEFAULT_CYCLES_TO_SEC_THRESHOLD"><a name="DEFAULT_CYCLES_TO_SEC_THRESHOLD"></a><pre><span class="Identifier">DEFAULT_CYCLES_TO_SEC_THRESHOLD</span><span class="Operator">*</span> <span class="Other">=</span> <span class="FloatNumber">1000.0</span></pre></dt>
 <dd>
 
@@ -1590,8 +1599,12 @@ Meaure the execution time of body for seconds period of time returning the array
 Meaure the execution time of body for seconds period of time returning the array of TestStats for the loop timings. If
 
 </dd>
-<dt id="suite"><a name="suite.t,string,float,stmt"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">warmupSeconds</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">stmt</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span> <span class="Other">{.</span>
-    <span class="Identifier">immediate</span><span class="Other">.}</span></pre></dt>
+<dt id="suite"><a name="suite.t,string,untyped,untyped"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">warmupSeconds</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span></pre></dt>
+<dd>
+
+
+</dd>
+<dt id="suite"><a name="suite.t,string,untyped"></a><pre><span class="Keyword">template</span> <span class="Identifier">suite</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">nameSuite</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">bmSuiteBody</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">stmt</span></pre></dt>
 <dd>
 
 
@@ -1606,7 +1619,7 @@ Meaure the execution time of body for seconds period of time returning the array
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small>Made with Nim. Generated: 2015-04-09 18:18:59 UTC</small>
+        <small>Made with Nim. Generated: 2015-04-10 16:20:01 UTC</small>
       </div>
     </div>
   </div>

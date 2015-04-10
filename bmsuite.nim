@@ -2,8 +2,8 @@
 #
 # To allow use of the benchmark inside a proc/block it must
 # not have any globals (i.e. suite*(...) gets a compile error)
-template bmSuite(nameSuite: string, warmupSeconds: float,
-    bmSuiteBody: stmt): stmt {.immediate.} =
+template bmSuite(nameSuite: string, warmupSeconds: untyped,
+    bmSuiteBody: untyped): stmt =
   ## Begin a benchmark suite. May contian one or more of setup, teardown,
   ## test, these are detailed below:
   ##::
@@ -62,7 +62,7 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
       break
 
     # Warmup the CPU
-    bmWarmupCpu(suiteObj, warmupSeconds)
+    bmWarmupCpu(suiteObj, float(warmupSeconds))
 
     # Measure overhead
     measureSecs(suiteObj, DEFAULT_OVERHEAD_RUNTIME, tsa, (discard))
@@ -85,7 +85,7 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test(name: string, loopCount: int,
                      tsArray: var openarray[TestStats],
-                     testBody: stmt): stmt {.dirty.} =
+                     testBody: untyped): stmt {.dirty.} =
       ## Run the testBody loopCount * tsArray.len times. Upon termination
       ## tsArray contains the results.
       block:
@@ -105,7 +105,7 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test(name: string, loopCount: int,
-        ts: var TestStats, testBody: stmt): stmt {.dirty.} =
+        ts: var TestStats, testBody: untyped): stmt {.dirty.} =
       ## Run the testBody loopCount times. Upon termination ts
       ## contains the result.
       block:
@@ -115,7 +115,7 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test(name: string, seconds: float,
-        tsArray: var openarray[TestStats], testBody: stmt): stmt {.dirty.} =
+        tsArray: var openarray[TestStats], testBody: untyped): stmt {.dirty.} =
       ## Run the testBody in a loop for seconds and the number of loops will be
       ## modulo the length of tsArray. Upon termination tsArray contiains
       ## the results.
@@ -137,7 +137,7 @@ template bmSuite(nameSuite: string, warmupSeconds: float,
 
     # {.dirty.} is needed so setup/TeardownImpl are invokable???
     template test(name: string, seconds: float, ts: var TestStats,
-        testBody: stmt): stmt {.dirty.} =
+        testBody: untyped): stmt {.dirty.} =
       ## Run the testBody in a loop for seconds and the number of loops will be
       ## modulo the length of tsArray with ts containing the results.
       block:

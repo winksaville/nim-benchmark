@@ -1,6 +1,6 @@
 import benchmark
 
-suite "increment", 0.0:
+suite "increment":
   var
     ts: TestStats
     loops = 0

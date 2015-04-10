@@ -1,5 +1,5 @@
 import unittest as ut
-import benchmark
+import benchmark as bm
 
 ut.suite "benchmark tests":
 
@@ -7,7 +7,7 @@ ut.suite "benchmark tests":
     var suiteCount = 0
 
     check(suiteCount == 0)
-    suite "loop tests", 0.0:
+    bm.suite "loop tests":
       suiteCount += 1
 
       var
@@ -50,7 +50,7 @@ ut.suite "benchmark tests":
 
     check(suiteCount == 1)
 
-    suite "timing and loop tests", 0:
+    bm.suite "timing and loop tests", 0:
       suiteCount += 1
 
       var
