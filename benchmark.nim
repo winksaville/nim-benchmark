@@ -167,6 +167,8 @@
 #   and IA-64 Instruction Set Architectures"
 # Here is a short link to that document: http://goo.gl/tzKu65
 
+{.push stackTrace:off.} ## TODO: if stacktrack is on rdTscAux fails
+
 import algorithm, math, times, os, posix, strutils
 export math, algorithm
 
@@ -806,3 +808,7 @@ when isMainModule:
         check(loops > 100)
         check(setupCalled == 1)
         check(teardownCalled == 1)
+
+  {.pop.}
+else:
+  {.pop.}
