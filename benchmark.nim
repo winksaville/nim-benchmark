@@ -259,8 +259,8 @@ proc `$`*(suiteObj: SuiteObj): string =
   result = "{suiteName=" & strOrNil(suiteObj.suiteName) &
            " testName=" & strOrNil(suiteObj.testName) &
            " fullName=" & strOrNil(suiteObj.fullName) &
-           " cyclesPerSec=" & secToStr(suiteObj.cyclesPerSec) &
-           " cyclesToSecThreshold=" & secToStr(suiteObj.cyclesToSecThreshold) &
+           " cyclesPerSec=" & $round(suiteObj.cyclesPerSec) & "cy" &
+           " cyclesToSecThreshold=" & $round(suiteObj.cyclesToSecThreshold) & "cy" &
            " verbosity=" & $suiteObj.verbosity &
            " overhead=" & cyclesToStr(suiteObj, suiteObj.overhead) &
            " hasRDTSCP=" & $suiteObj.hasRDTSCP & "}"
@@ -733,6 +733,8 @@ when isMainModule:
           loops = 0
           setupCalled = 0
           teardownCalled = 0
+
+        echo "suiteObj=", suiteObj
 
         setup:
           loops = 0
