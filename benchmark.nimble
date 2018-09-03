@@ -6,4 +6,4 @@ description   = "Provide a benchmark suite for nim programs"
 license       = "BSD"
 
 [Deps]
-Requires: "nim >= 0.10.3"
+Requires: "nim >= 0.18.1"

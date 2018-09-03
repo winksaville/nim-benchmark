@@ -232,9 +232,6 @@ proc DBGV*(suiteObj: SuiteObj): bool {.inline.} =
   ## Return true if suiteObj.verbosity >= Verbosity.verbose
   result = DBGV(suiteObj.verbosity)
 
-proc strOrNil(s: string): string =
-  result = if s == nil: "nil" else: s
-
 proc secToStr*(seconds: float): string =
   ## Convert seconds to string with suffix if possible
   var
@@ -250,15 +247,15 @@ proc secToStr*(seconds: float): string =
 proc cyclesToStr*(suiteObj: SuiteObj, cycles: float): string =
   ## Convert cycles to string either as cycles or time
   ## depending upon suiteObj.cyclesToSecThreshold
-  if cycles >=  suiteObj.cyclesToSecThreshold:
+  if cycles >= suiteObj.cyclesToSecThreshold:
     result = secToStr(cycles / suiteObj.cyclesPerSec)
   else:
     result = $round(cycles) & "cy"
 
 proc `$`*(suiteObj: SuiteObj): string =
-  result = "{suiteName=" & strOrNil(suiteObj.suiteName) &
-           " testName=" & strOrNil(suiteObj.testName) &
-           " fullName=" & strOrNil(suiteObj.fullName) &
+  result = "{suiteName=" & suiteObj.suiteName &
+           " testName=" & suiteObj.testName &
+           " fullName=" & suiteObj.fullName &
            " cyclesPerSec=" & $round(suiteObj.cyclesPerSec) & "cy" &
            " cyclesToSecThreshold=" & $round(suiteObj.cyclesToSecThreshold) & "cy" &
            " verbosity=" & $suiteObj.verbosity &
@@ -397,7 +394,7 @@ proc mfence() {.inline.} =
   """.}
 
 proc hasRDTSCP*(): bool =
-  var id = cpuid(0x80000001)
+  var id = cpuid(0x80000001'i32)
   result = (id.edx and (1 shl 27)) != 0
 
 proc rdtsc(): int64 {.inline.} =
@@ -533,7 +530,7 @@ proc cyclesPerSecond*(suiteObj: SuiteObj, seconds: float = DEFAULT_CPS_RUNTIME):
   if DBG(suiteObj): echo "cyclesPerSecond:- BAD result=", result
 
 template measure(suiteObj: SuiteObj, durations: var openarray[float],
-    tsArray: var openarray[TestStats], body: stmt): bool =
+    tsArray: var openarray[TestStats], body: untyped): bool =
   var
     ok: bool = true
     tscAuxInitial: int32
@@ -579,7 +576,7 @@ template measure(suiteObj: SuiteObj, durations: var openarray[float],
   ok
 
 template measureSecs*(suiteObj: SuiteObj, seconds: float,
-    tsArray: var openarray[TestStats], body: stmt) =
+    tsArray: var openarray[TestStats], body: untyped) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of TestStats for the loop timings. If
   if DBGV(suiteObj): echo "measureSecs:+ seconds=", seconds
@@ -601,7 +598,7 @@ template measureSecs*(suiteObj: SuiteObj, seconds: float,
   if DBGV(suiteObj): echo "measureSecs:-"
 
 template measureLoops*(suiteObj: SuiteObj, loopCount: int,
-    tsArray: var openarray[TestStats], body: stmt) =
+    tsArray: var openarray[TestStats], body: untyped) =
   ## Meaure the execution time of body for seconds period of time
   ## returning the array of TestStats for the loop timings. If
   if DBGV(suiteObj): echo "measureLoops: loopCount=", loopCount
@@ -661,11 +658,11 @@ proc bmWarmupCpu*(suiteObj: SuiteObj, seconds: float) =
 include bmsuite
 
 template suite*(nameSuite: string, warmupSeconds: untyped,
-    bmSuiteBody: untyped): stmt =
+    bmSuiteBody: untyped): untyped =
   bmSuite(nameSuite, warmupSeconds, bmSuiteBody)
 
 template suite*(nameSuite: string,
-    bmSuiteBody: untyped): stmt =
+    bmSuiteBody: untyped): untyped =
   bmSuite(nameSuite, DEFAULT_WARMUP_RUNTIME, bmSuiteBody)
 
 when isMainModule:
